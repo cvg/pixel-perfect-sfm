@@ -1,7 +1,7 @@
 # Pixel-Perfect Structure-from-Motion (ICCV 2021 Oral)
 
 We introduce a framework that improves the accuracy of Structure-from-Motion by refining keypoints, camera poses, and 3D points using the direct alignment of deep features. It is presented in our paper:
-- [Pixel-Perfect Structure-from-Motion with Featuremetric Refinement](https://psarlin.com/pixsfm/pixelperfect_SfM_ICCV2021.pdf)
+- [Pixel-Perfect Structure-from-Motion with Featuremetric Refinement](https://arxiv.org/abs/2108.08291)
 - to appear at [ICCV 2021](http://iccv2021.thecvf.com/)
 - Authors: [Philipp Lindenberger](https://scholar.google.com/citations?user=FMVAi2YAAAAJ&hl=en)\*, [Paul-Edouard Sarlin](psarlin.com/)\*, [Viktor Larsson](http://people.inf.ethz.ch/vlarsson/), and [Marc Pollefeys](http://people.inf.ethz.ch/pomarc/)
 - Website: [psarlin.com/pixsfm](https://psarlin.com/pixsfm/)
@@ -9,7 +9,7 @@ We introduce a framework that improves the accuracy of Structure-from-Motion by 
  This repository will host the code to run and evaluate our refinement. Please subscribe to [this issue](https://github.com/cvg/pixel-perfect-sfm/issues/1) if you wish to be notified of the code release.
 
 <p align="center">
-  <a href="https://psarlin.com/pixsfm/pixelperfect_SfM_ICCV2021.pdf"><img src="doc/pipeline.svg" width="90%"/></a>
+  <a href="https://arxiv.org/abs/2108.08291"><img src="doc/pipeline.svg" width="90%"/></a>
 </p>
 
 
