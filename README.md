@@ -4,7 +4,7 @@ We introduce a framework that improves the accuracy of Structure-from-Motion by 
 - [Pixel-Perfect Structure-from-Motion with Featuremetric Refinement](https://arxiv.org/abs/2108.08291)
 - to appear at [ICCV 2021](http://iccv2021.thecvf.com/)
 - Authors: [Philipp Lindenberger](https://scholar.google.com/citations?user=FMVAi2YAAAAJ&hl=en)\*, [Paul-Edouard Sarlin](psarlin.com/)\*, [Viktor Larsson](http://people.inf.ethz.ch/vlarsson/), and [Marc Pollefeys](http://people.inf.ethz.ch/pomarc/)
-- Website: [psarlin.com/pixsfm](https://psarlin.com/pixsfm/)
+- Website: [psarlin.com/pixsfm](https://psarlin.com/pixsfm/) (videos, slides, poster)
 
  This repository will host the code to run and evaluate our refinement. Please subscribe to [this issue](https://github.com/cvg/pixel-perfect-sfm/issues/1) if you wish to be notified of the code release.
 
