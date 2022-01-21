@@ -1,0 +1,143 @@
+# Copyright (c) 2018, ETH Zurich and UNC Chapel Hill.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#
+#     * Neither the name of ETH Zurich and UNC Chapel Hill nor the names of
+#       its contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Author: Johannes L. Schoenberger (jsch-at-demuc-dot-de)
+
+# Edited by: Philipp Lindenberger
+
+# Find package module for PIXSFM library.
+#
+# The following variables are set by this module:
+#
+#   PIXSFM_FOUND: TRUE if PIXSFM is found.
+#   PIXSFM_VERSION: PIXSFM version.
+#   PIXSFM_INCLUDE_DIRS: Include directories for PIXSFM.
+#   PIXSFM_LINK_DIRS: Link directories for PIXSFM.
+#   PIXSFM_LIBRARIES: Libraries required to link PIXSFM.
+#   PIXSFM_CUDA_ENABLED: Whether PIXSFM was compiled with CUDA support.
+#   PIXSFM_CGAL_ENABLED: Whether PIXSFM was compiled with CGAL dependencies.
+
+get_filename_component(PIXSFM_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_FILE} PATH)
+set(PIXSFM_INSTALL_PREFIX "${PIXSFM_INSTALL_PREFIX}/../..")
+
+set(PIXSFM_FOUND FALSE)
+
+# Find dependency packages.
+message(${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/cmake/)
+set(TEMP_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/cmake)
+
+set(pybind11_DIR
+    ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/cmake/pybind11/)
+
+set(HighFive_DIR
+    ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/HighFive/CMake/)
+
+if(PIXSFM_FIND_QUIETLY)
+    find_package(COLMAP QUIET)
+
+    find_package(pybind11 REQUIRED)
+
+    find_package(HighFive REQUIRED)
+
+else()
+    find_package(COLMAP REQUIRED)
+
+    find_package(pybind11 REQUIRED)
+
+    find_package(HighFive REQUIRED)
+endif()
+
+# Set the exported variables.
+
+set(PIXSFM_FOUND TRUE)
+
+set(PIXSFM_VERSION @PIXSFM_VERSION@)
+
+set(PIXSFM_AVX2_ENABLED @AVX2_ENABLED@)
+
+set(PIXSFM_INCLUDE_DIRS
+    ${PIXSFM_INSTALL_PREFIX}/include/
+    ${PIXSFM_INSTALL_PREFIX}/include/pixsfm/
+    ${PIXSFM_INSTALL_PREFIX}/include/pixsfm/third-party/
+    ${PIXSFM_INSTALL_PREFIX}/include/pixsfm/third-party/pybind11/
+    ${HDF5_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIR}
+    ${PROJECT_SOURCE_DIR}
+    ${FREEIMAGE_INCLUDE_DIRS}
+    ${CERES_INCLUDE_DIRS}
+    ${COLMAP_INCLUDE_DIRS}
+)
+
+set(PIXSFM_LINK_DIRS
+    ${PIXSFM_INSTALL_PREFIX}/lib/pixsfm
+    ${COLMAP_LINK_DIRS}
+)
+
+set(PIXSFM_INTERNAL_LIBRARIES
+    HighFive
+    pybind11::module
+    pybind11::embed
+)
+
+set(PIXSFM_EXTERNAL_LIBRARIES
+    ${CERES_LIBRARIES}
+    ${FREEIMAGE_LIBRARIES}
+    ${COLMAP_LIBRARIES}
+    ${HDF5_C_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
+if(UNIX)
+    list(APPEND PIXSFM_EXTERNAL_LIBRARIES
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        pthread)
+endif()
+
+if (AVX2_ENABLED)
+  add_definitions("-DAVX2_ENABLED")
+  set(EIGEN_DISABLE_ALIGN_FLAGS
+    "-DEIGEN_MAX_ALIGN_BYTES=16 -DEIGEN_MAX_STATIC_ALIGN_BYTES=16")
+  set (AVX2_CXX_FLAGS "-mavx2 -mf16c -mfma")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_CXX_FLAGS} ${EIGEN_DISABLE_ALIGN_FLAGS}")
+endif()
+
+set(PIXSFM_LIBRARIES
+    pixsfm
+    ${PIXSFM_INTERNAL_LIBRARIES}
+    ${PIXSFM_EXTERNAL_LIBRARIES}
+)
+
+# Cleanup of configuration variables.
+
+set(CMAKE_MODULE_PATH ${TEMP_CMAKE_MODULE_PATH})
+
+unset(PIXSFM_INSTALL_PREFIX)

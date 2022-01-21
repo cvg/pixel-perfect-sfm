@@ -1,0 +1,171 @@
+dense_features:
+  device: auto
+  dtype: half
+  fast_image_load: false
+  l2_normalize: true
+  max_edge: 1600
+  model:
+    name: s2dnet
+    num_layers: 1
+    checkpointing: null
+    output_dim: 128
+    pretrained: s2dnet
+    remove_pooling_layers: false
+    combine: false
+  patch_size: 16
+  pyr_scales:
+  - 1.0
+  resize: LANCZOS
+  sparse: true
+  use_cache: false
+  overwrite_cache: false
+  load_cache_on_init: false
+  cache_format: chunked
+interpolation:
+  nodes:
+  - - 0.0
+    - 0.0
+  mode: BICUBIC
+  l2_normalize: true
+  ncc_normalize: false
+mapping:
+  interpolation: ${interpolation}
+  KA:
+    strategy: featuremetric
+    apply: true
+    interpolation: ${..interpolation}
+    level_indices: null
+    max_kps_per_problem: 50
+    optimizer:
+      loss:
+        name: cauchy
+        params:
+        - 0.25
+      solver:
+        function_tolerance: 0.0
+        gradient_tolerance: 0.0
+        parameter_tolerance: 1.0e-05
+        minimizer_progress_to_stdout: false
+        max_num_iterations: 100
+        max_linear_solver_iterations: 200
+        max_num_consecutive_invalid_steps: 10
+        max_consecutive_nonmonotonic_steps: 10
+        use_inner_iterations: false
+        use_nonmonotonic_steps: true
+        update_state_every_iteration: false
+        num_threads: 1
+      print_summary: false
+      bound: 4.0
+      num_threads: -1
+    split_in_subproblems: true
+  BA:
+    apply: true
+    interpolation: ${..interpolation}
+    level_indices: null
+    max_tracks_per_problem: 10
+    num_threads: -1
+    optimizer:
+      loss:
+        name: cauchy
+        params:
+        - 0.25
+      solver:
+        function_tolerance: 0.0
+        gradient_tolerance: 0.0
+        parameter_tolerance: 0.0
+        minimizer_progress_to_stdout: false
+        max_num_iterations: 100
+        max_linear_solver_iterations: 200
+        max_num_consecutive_invalid_steps: 10
+        max_consecutive_nonmonotonic_steps: 10
+        use_inner_iterations: true
+        use_nonmonotonic_steps: true
+        update_state_every_iteration: false
+        num_threads: -1
+      print_summary: false
+      refine_focal_length: true
+      refine_principal_point: false
+      refine_extra_params: true
+      refine_extrinsics: true
+    references:
+      loss:
+        name: cauchy
+        params:
+        - 0.25
+      iters: 100
+      keep_observations: false
+      compute_offsets3D: false
+      num_threads: -1
+    repeats: 1
+    strategy: feature_reference
+localization:
+  interpolation: ${interpolation}
+  target_reference: nearest
+  unique_inliers: min_error
+  references:
+    loss:
+      name: cauchy
+      params:
+      - 0.25
+    iters: 100
+    keep_observations: true
+    compute_offsets3D: false
+    num_threads: -1
+  max_tracks_per_problem: 50
+  QKA:
+    apply: true
+    feature_inlier_thresh: -1
+    interpolation: ${..interpolation}
+    level_indices: null
+    overwrite_features_sparse: null
+    stacked_correspondences: False
+    optimizer:
+      loss:
+        name: trivial
+        params: []
+      solver:
+        function_tolerance: 0.0
+        gradient_tolerance: 0.0
+        parameter_tolerance: 1.0e-05
+        minimizer_progress_to_stdout: false
+        max_num_iterations: 100
+        max_linear_solver_iterations: 200
+        max_num_consecutive_invalid_steps: 10
+        max_consecutive_nonmonotonic_steps: 10
+        use_inner_iterations: false
+        use_nonmonotonic_steps: true
+        update_state_every_iteration: false
+        num_threads: -1
+      print_summary: false
+      bound: 4.0
+  PnP:
+    estimation:
+      ransac:
+        max_error: 12
+    refinement: {}
+  QBA:
+    apply: true
+    interpolation: ${..interpolation}
+    level_indices: null
+    optimizer:
+      loss:
+        name: cauchy
+        params:
+        - 0.25
+      solver:
+        function_tolerance: 0.0
+        gradient_tolerance: 0.0
+        parameter_tolerance: 0.0
+        minimizer_progress_to_stdout: false
+        max_num_iterations: 100
+        max_linear_solver_iterations: 200
+        max_num_consecutive_invalid_steps: 10
+        max_consecutive_nonmonotonic_steps: 10
+        use_inner_iterations: false
+        use_nonmonotonic_steps: false
+        update_state_every_iteration: false
+        num_threads: -1
+      print_summary: false
+      refine_focal_length: false
+      refine_principal_point: false
+      refine_extra_params: false
