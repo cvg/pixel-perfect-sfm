@@ -1,0 +1,10 @@
+git+https://github.com/colmap/pycolmap
+torch>=1.7
+torchvision>=0.8
+numpy
+tqdm
+matplotlib
+plotly
+scipy
+h5py
+omegaconf

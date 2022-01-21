@@ -1,0 +1,1 @@
+This submodule is an extension of [PyCeres](https://github.com/Edwinem/ceres_python_bindings) by Nikolaus Mitchell.

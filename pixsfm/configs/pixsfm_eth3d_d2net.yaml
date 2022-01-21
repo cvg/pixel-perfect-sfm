@@ -1,0 +1,42 @@
+dense_features:
+    model:
+        name: "s2dnet"
+        num_layers: 2
+        remove_pooling_layers: true
+    sparse : True
+    max_edge : 1600
+    patch_size : 12
+mapping:
+    dense_features: ${..dense_features}
+    KA:
+        apply: true
+        strategy: "featuremetric"
+        level_indices: null
+        optimizer:
+            print_summary: false
+    BA:
+        apply: true
+        strategy: "feature_reference"
+        repeats: 1
+        level_indices: null
+        optimizer:
+            print_summary: false
+            refine_focal_length: false
+            refine_extra_params: false
+            refine_extrinsics: false
+localization:
+    dense_features: ${..dense_features}
+    target_reference: "nearest"
+    QKA:
+        apply: true
+        level_indices: [0]
+        feature_inlier_thresh: -1
+        optimizer:
+            print_summary: false
+    QBA:
+        apply: true
+        level_indices: [0]
+        optimizer:
+            print_summary: false
+            refine_focal_length: false
+            refine_extra_params: false

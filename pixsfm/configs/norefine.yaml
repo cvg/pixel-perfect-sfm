@@ -1,0 +1,15 @@
+dense_features:
+    model:
+        name: "image"
+mapping:
+    dense_features: ${..dense_features}
+    KA:
+        apply: false
+    BA:
+        apply: false
+localization:
+    dense_features: ${..dense_features}
+    QKA:
+        apply: false
+    QBA:
+        apply: false

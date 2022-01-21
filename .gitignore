@@ -1,0 +1,21 @@
+*.pyc
+*.pdf
+
+build/
+pixsfm/features/models/checkpoints/
+*.pth
+.ipynb_checkpoints
+
+lsf*
+.vscode/
+.DS_Store
+
+*.so
+pixsfm.egg-info
+multi-view-evaluation/
+outputs/
+
+# ignore all datasets
+datasets/*
+# except the demo
+!datasets/sacre_coeur/
