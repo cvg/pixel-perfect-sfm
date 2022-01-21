@@ -4,7 +4,7 @@
 
 We introduce a framework that **improves the accuracy of Structure-from-Motion (SfM) and visual localization** by refining keypoints, camera poses, and 3D points using the direct alignment of deep features. It is presented in our paper:
 - [Pixel-Perfect Structure-from-Motion with Featuremetric Refinement](https://arxiv.org/abs/2108.08291)
-- Authors: [Philipp Lindenberger](https://scholar.google.com/citations?user=FMVAi2YAAAAJ&hl=en)\*, [Paul-Edouard Sarlin](psarlin.com/)\*, [Viktor Larsson](http://people.inf.ethz.ch/vlarsson/), and [Marc Pollefeys](http://people.inf.ethz.ch/pomarc/)
+- Authors: [Philipp Lindenberger](https://scholar.google.com/citations?user=FMVAi2YAAAAJ&hl=en)\*, [Paul-Edouard Sarlin](https://psarlin.com/)\*, [Viktor Larsson](http://people.inf.ethz.ch/vlarsson/), and [Marc Pollefeys](http://people.inf.ethz.ch/pomarc/)
 - Website: [psarlin.com/pixsfm](https://psarlin.com/pixsfm/) (videos, slides, poster)
 
 Here we provide `pixsfm`, a Python package that can be readily used with [COLMAP](https://colmap.github.io/) and [our toolbox hloc](https://github.com/cvg/Hierarchical-Localization/). This makes it easy to **refine an existing COLMAP model or reconstruct a new dataset with state-of-the-art image matching**. Our framework also improves visual localization in challenging conditions.
