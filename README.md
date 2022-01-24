@@ -73,7 +73,7 @@ Given keypoints and matches computed with hloc and stored in HDF5 files, we can 
 ```python
 from pixsfm.refine_hloc import PixSfM
 refiner = PixSfM()
-model, _ = refiner.reconstruction(
+model, debug_outputs = refiner.reconstruction(
     path_to_working_directory,
     path_to_image_dir,
     path_to_list_of_image_pairs,
@@ -98,6 +98,7 @@ Note that:
 
 - The final refined 3D model is written to `path_to_working_directory` in either case.
 - Dense features are automatically extracted (on GPU when available) using a pre-trained CNN, [S2DNet](https://github.com/germain-hug/S2DNet-Minimal) by default.
+- The result `debug_outputs` contains the dense features and optimization statistics.
 
 ### Configurations
 
@@ -119,6 +120,7 @@ python -m pixsfm.refine_hloc reconstructor [...] dense_features.use_cache=true
 We also provide ready-to-use configuration templates in [`pixsfm/configs/`](./pixsfm/configs/) covering the main use cases. For example, [`pixsfm/configs/low_memory.yaml`](./pixsfm/configs/low_memory.yaml) reduces the memory consumption to scale to large scene and can be used as follow:
 ```python
 refiner = PixSfM(conf="low_memory")
+# or
 python -m pixsfm.refine_hloc reconstructor [...] --config low_memory
 ```
 
@@ -183,7 +185,7 @@ To refine keypoints stored in a COLMAP database:
 from pixsfm.refine_colmap import PixSfM
 refiner = PixSfM()
 keypoints, _, _ = refiner.refine_keypoints_from_db(
-    path_to_output_database,  # pass path_to_output_database for in-place refinement
+    path_to_output_database,  # pass path_to_input_database for in-place refinement
     path_to_input_database,
     path_to_image_dir,
 )
