@@ -13,17 +13,17 @@ The core of the code-base is implemented in C++ and we provide bindings with hig
 
 ### Granularity & Configuration
 
-The codebase can called and configured at different levels from Python:
+The codebase can be called and configured at different levels from Python:
 1. from the command line interface: you can override options with dotlists, use existing configuration files, or write your own.
 
-2. call the individual objects for KA or BA and use the solver properties to decide on which parameters are optimized and set constant via the Ceres problem object.
+2. call the individual objects for KA or BA and use the problem_setup to decide on which parameters are optimized or set constant.
 
 3. build a custom featuremetric optimization: manually add the different residuals and parameters and setup the Ceres problem and solver - see [the documentation of PyCeres](https://github.com/Edwinem/ceres_python_bindings), our own port in `pixsfm/pyceres`, and the different residuals in `pixsfm/residuals`
 
 ### Managing Options
 We use [OmegaConf](https://omegaconf.readthedocs.io/) for merging configs in Python and accept both YAML files and command line dotlists as input.
 
-The C++ back-end code is configured via multipled C++ config-like structures, such as `InterpolationConfig`. These objects can be intialized from a Python dictionary and behave similarly to Python dataclasses. This constructor recursively merges options defined in the dict to the C++-defined defaults. Note that this merging is strict, i.e. unknown options or incorrect types will raise exceptions.
+The C++ back-end code is configured via multipled C++ config-like structures, such as `InterpolationConfig`. These objects can be intialized from a Python dictionary and behave similarly to Python dataclasses (see `pixsfm/_pixsfm/src/helpers.h` --> `void make_dataclass`). This constructor recursively merges options defined in the dict to the C++-defined defaults. Note that this merging is strict, i.e. unknown options or incorrect types will raise exceptions.
 
 When calling C++ function from Python, any argument that expects a C++ config structure can accept either an instance of the structure or a Python dictionary. In the latter case, casting-by-merging, as described above, is performed automatically.
 
@@ -94,9 +94,9 @@ solver = KeypointAdjuster.create(config)  # return specific solver
 # By default all keypoints are variable
 setup = KeypointAdjustmentSetup()
 # Setting all keypoints of an image constant
-setup.set_image_constant("image1.jpg")
+setup.set_image_constant(graph.image_name_to_id["image1.jpg"])
 # Setting individual keypoints constant
-setup.set_keypoint_constant("image2.jpg", 5)
+setup.set_keypoint_constant(graph.image_name_to_id["image2.jpg"], 5)
 
 solver.refine_multilevel(
     keypoints, feature_manager, graph, problem_setup=setup)
@@ -154,14 +154,14 @@ If these options are set to false, they are applied regardless of the config in 
 The  available optimization strategies are:
 -   `feature_reference` (default): minimize the featuremetric error between the robust reference in each track and its reprojected locations.
 -   `patch_warp`: minimize the featuremetric error between a patch around the robust reference in each track and patches around its reprojected locations, using fronto-parallel warping.
--   `costmaps`: similar to `feature_reference`, but pre-compute the featuremetric error to the reference to greatly reduce memory consumption and the jacobian size. This is an approximate solver. Only works in sparse-mode and does not work with patches.
+-   `costmaps`: similar to `feature_reference`, but pre-compute the featuremetric error to the reference to greatly reduce memory consumption and the jacobian size. This is an approximate solver. Only works in sparse-mode and does not work with >1 interpolation nodes.
 -   `geometric`: classic bundle adjustment minimizing the geometric reprojection error.
 
-Right now only the following camera models are supported for patch warping: `SIMPLE_PINHOLE`, `PINHOLE`, `SIMPLE_RADIAL`, `RADIAL`.
+Right now only the following camera models are supported for patch warping: `SIMPLE_PINHOLE`, `PINHOLE`, `SIMPLE_RADIAL`, `RADIAL`, `OPENCV`. Note that all cameras in the reconstruction are required to have the same camera model (different camera param values are allowed). Mixed camera models will be supported in a future release.
 
-For parallelism in reference/costmap extraction, we assign a problem label for each node point3D-id (see function `find_problem_labels` in `bundle_adjustment/main.py`). Options related to parallelism / scheduling:
+For parallelism in reference/costmap extraction, we assign a problem label for each point3D-id (see function `find_problem_labels` in `bundle_adjustment/main.py`). Options related to parallelism / scheduling:
 -   `references.num_threads` / `costmaps.num_threads`: number of outer threads in reference/costmap extraction (-1 = all threads).
--   `optimizer.solver.num_threads`: Number of threads used in solvin the global BA problem.
+-   `optimizer.solver.num_threads`: Number of threads used in solving the global BA problem.
 -   `max_tracks_per_problem`: Defines how the problem is split. Lower values result in better balancing and reduced memory consumption, but larger threading overhead.
 
 ## Localization
@@ -179,8 +179,8 @@ from pixsfm.localization import QueryLocalizer
 # - feature_manager: features of reference reconstruction
 localizer = QueryLocalizer(
     reconstruction,
-    conf=cfg,
-    dense_features=feature_manager,
+    conf=config,
+    dense_features=feature_manager
 )
 
 # Parameters:
