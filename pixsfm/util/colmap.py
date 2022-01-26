@@ -49,8 +49,8 @@ def read_matches_from_db(
         match = blob_to_array(data, np.uint32, (-1, 2))
         matches.append(match)
         if compute_scores:
-            s = [np.dot(desc[id1][match[:, 0]], desc[id2][match[:, 1]].T)]
-            scores.append(np.array(s))
+            d1, d2 = desc[id1][match[:, 0]], desc[id2][match[:, 1]]
+            scores.append(np.einsum('nd,nd->n', d1, d2))
     db.close()
     return pairs, matches, scores
 
