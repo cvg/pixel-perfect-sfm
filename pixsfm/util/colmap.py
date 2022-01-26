@@ -28,8 +28,8 @@ def read_keypoints_from_db(database_path: Path, as_cpp_map: bool = True,
     return keypoints_dict
 
 
-def read_matches_from_db(
-        database_path: Path) -> Tuple[List[Tuple[str]], List[np.ndarray]]:
+def read_matches_from_db(database_path: Path
+                         ) -> Tuple[List[Tuple[str]], List[np.ndarray]]:
     db = COLMAPDatabase.connect(database_path)
     id2name = db.image_id_to_name()
     desc = {}
