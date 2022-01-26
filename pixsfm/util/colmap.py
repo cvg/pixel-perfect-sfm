@@ -28,13 +28,14 @@ def read_keypoints_from_db(database_path: Path, as_cpp_map: bool = True,
     return keypoints_dict
 
 
-def read_matches_from_db(
-        database_path: Path) -> Tuple[List[Tuple[str]], List[np.ndarray]]:
+def read_matches_from_db(database_path: Path
+                         ) -> Tuple[List[Tuple[str]], List[np.ndarray]]:
     db = COLMAPDatabase.connect(database_path)
     id2name = db.image_id_to_name()
     desc = {}
     for image_id, r, c, data in db.execute("SELECT * FROM descriptors"):
-        desc[image_id] = blob_to_array(data, np.uint32, (-1, c))
+        d = blob_to_array(data, np.uint8, (-1, c))
+        desc[image_id] = d / np.linalg.norm(d, axis=1, keepdims=True)
     # only compute scores if descriptors are in database
     compute_scores = (len(desc) > 0)
     scores = [] if compute_scores else None
@@ -46,11 +47,11 @@ def read_matches_from_db(
         if data is None:
             continue
         pairs.append((name1, name2))
-        matches.append(blob_to_array(data, np.uint32, (-1, 2)))
+        match = blob_to_array(data, np.uint32, (-1, 2))
+        matches.append(match)
         if compute_scores:
-            s = [np.dot(desc[id1][row[0]], desc[id2[1]][row[1]])
-                 for row in matches]
-            scores.append(np.array(s))
+            d1, d2 = desc[id1][match[:, 0]], desc[id2][match[:, 1]]
+            scores.append(np.einsum('nd,nd->n', d1, d2))
     db.close()
     return pairs, matches, scores
 
