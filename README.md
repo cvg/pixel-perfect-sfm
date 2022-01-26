@@ -579,6 +579,7 @@ Still having questions about `pixsfm`? Anything in the doc is unclear? Are you u
 
 We welcome external contributions, especially to improve the following points:
 
+- [ ] make `pixsfm` work on Windows
 - [ ] train and integrate dense features that are more compact with fewer dimensions
 - [ ] build a conda package for pixsfm and pycolmap to not require installing COLMAP from source
 - [ ] add examples on how to build featuremetric problems with pyceres
