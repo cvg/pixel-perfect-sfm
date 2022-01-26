@@ -16,7 +16,10 @@ namespace py = pybind11;
 class glog_dummy {};  // dummy class
 
 namespace pixsfm {
-void PyBindLogStack(const char* data, int size) {
+
+// Issue #7: Glog version > 0.5.0 requires T=size_t, <= 0.5.0 T=int
+template <typename T>
+void PyBindLogStack(const char* data, T size) {
   std::chrono::milliseconds timespan(2000);  // or whatever
   py::scoped_estream_redirect stream(
       std::cerr,                                // std::ostream&
