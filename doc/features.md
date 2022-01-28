@@ -7,10 +7,10 @@ We provide a data structure that can handle two different inputs:
 2. Path to a HDF5 cache file: the data is loaded on demand via `FeatureView`.
 
 The following Hierarchy is used (from fine to coarse):
-1. `FeaturePatch`: Stores the underlying data and metadata. 
-2. `FeatureMap`: Stores a map {`keypoint_id`->`FeaturePatch`}. If the data is stored in dense mode, i.e. one large featuremap, the keypoint id is `features.kDenseId`. You can query the data associated to a keypoint by its id, and it will either return the patch associated to this keypoint or the dense patch.
+1. `FeaturePatch`: Stores the underlying data and metadata.
+2. `FeatureMap`: Stores a map {`keypoint_id`->`FeaturePatch`}. If the data is stored in dense mode, i.e. one large featuremap, the dense patch is stored at `features.kDenseId`. You can query the data associated to a keypoint via `FeatureMap.fpatch(keypoint_id)`, and it will either return the patch associated to this keypoint or the dense patch.
 3. `FeatureSet`: A map {`imagename`->`FeatureMap`} of similar data (i.e. the same layer in the deep features).
-4. `FeatureManager`: List of feature sets. 
+4. `FeatureManager`: List of feature sets.
 
 ## Accessing Data
 Since the low-memory cache mode loads data on demand, i.e. the `FeatureManager` has only loaded metadata, we provide a simple thread-safe interface to load features from file if necessary, the `FeatureView`.
@@ -22,7 +22,9 @@ This class has two main functionalities:
 
 By accessing data through the `FeatureView` it is guaranteed that the `FeaturePatch` has actually loaded the corresponding data by maintaining a reference count. It allows fine-grain access of data in a `FeatureSet`:
 ```python
-fmanager = FeatureManager(path_to_cache_file)  # only loads metadata in H5
+from pixsfm.features import FeatureView
+from pixsfm.extract import load_features_from_cache
+fmanager = load_features_from_cache(path_to_cache_file)  # only loads metadata in H5
 feature_set = fmanager.fsets[0]  # level 0, first layer
 
 required_patches = {"image1.jpg": [1,5,6]}
@@ -57,7 +59,6 @@ During bundle adjustment, we extract robust references, which are defined by a s
 map {`point3D_id`->`features.Reference`}.
 
 ## Using your own features
-
 Put your model into `pixsfm/features/models/<model_name>.py`. To be compatible with the pipeline, it has to inherit from `BaseModel`, and define the following methods:
 - `_forward(self, tensor: torch.Tensor)`: extracts a list of featuremaps
 from a preprocessed image.

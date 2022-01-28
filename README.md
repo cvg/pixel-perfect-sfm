@@ -31,7 +31,7 @@ With `pixsfm`, you can:
 
 ## Installation
 
-`pixsfm` requires Python >=3.6 and COLMAP [installed from source](https://colmap.github.io/install.html#build-from-source) at the latest commit. The core optimization is implemented in C++ with [Ceres](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [pycolmap](https://github.com/colmap/pycolmap) and [PyTorch](https://pytorch.org/) >=1.7:
+`pixsfm` requires Python >=3.6 and COLMAP [installed from source](https://colmap.github.io/install.html#build-from-source) at the latest commit. The core optimization is implemented in C++ with [Ceres](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) built from source:
 
 ```bash
 # install COLMAP following colmap.github.io/install.html#build-from-source
@@ -73,7 +73,7 @@ Given keypoints and matches computed with hloc and stored in HDF5 files, we can 
 ```python
 from pixsfm.refine_hloc import PixSfM
 refiner = PixSfM()
-model, _ = refiner.reconstruction(
+model, debug_outputs = refiner.reconstruction(
     path_to_working_directory,
     path_to_image_dir,
     path_to_list_of_image_pairs,
@@ -98,6 +98,7 @@ Note that:
 
 - The final refined 3D model is written to `path_to_working_directory` in either case.
 - Dense features are automatically extracted (on GPU when available) using a pre-trained CNN, [S2DNet](https://github.com/germain-hug/S2DNet-Minimal) by default.
+- The result `debug_outputs` contains the dense features and optimization statistics.
 
 ### Configurations
 
@@ -119,6 +120,7 @@ python -m pixsfm.refine_hloc reconstructor [...] dense_features.use_cache=true
 We also provide ready-to-use configuration templates in [`pixsfm/configs/`](./pixsfm/configs/) covering the main use cases. For example, [`pixsfm/configs/low_memory.yaml`](./pixsfm/configs/low_memory.yaml) reduces the memory consumption to scale to large scene and can be used as follow:
 ```python
 refiner = PixSfM(conf="low_memory")
+# or
 python -m pixsfm.refine_hloc reconstructor [...] --config low_memory
 ```
 
@@ -183,7 +185,7 @@ To refine keypoints stored in a COLMAP database:
 from pixsfm.refine_colmap import PixSfM
 refiner = PixSfM()
 keypoints, _, _ = refiner.refine_keypoints_from_db(
-    path_to_output_database,  # pass path_to_output_database for in-place refinement
+    path_to_output_database,  # pass path_to_input_database for in-place refinement
     path_to_input_database,
     path_to_image_dir,
 )
@@ -577,6 +579,7 @@ Still having questions about `pixsfm`? Anything in the doc is unclear? Are you u
 
 We welcome external contributions, especially to improve the following points:
 
+- [ ] make `pixsfm` work on Windows
 - [ ] train and integrate dense features that are more compact with fewer dimensions
 - [ ] build a conda package for pixsfm and pycolmap to not require installing COLMAP from source
 - [ ] add examples on how to build featuremetric problems with pyceres

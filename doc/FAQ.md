@@ -13,9 +13,9 @@ Aborted (core dumped)
 ```
 then this is likely an exception thrown by COLMAP. COLMAP and Ceres use GLOG and throw SIGTERM whenever an error occurs, thereby killing the program. Have a close look at the the condition of the failed check and try to figure out what happened.
 
-### Unsupported number of channel
+### Unsupported number of channels
 
-If the exception mentions `Unknown Dimensions (CHANNELS, N_NODES)`, then you are likely trying to use a different number of channels or interpolation nodes as the code was compiled for. The code is heavily templated, and requires explicit template instantiation. Therefore, certain number of channels and number of interpolation nodes are (by default) not supported to limit build time. If you want to use different channels and interpolation grids, we provide simple macros in the C++ solvers, usually on top of files such as `pixsfm/bundle_adjustment/src/feature_reference_bundle_adjuster.h`.
+If the exception mentions `Unknown Dimensions (CHANNELS, N_NODES)`, then you are likely trying to use a different number of channels or interpolation nodes as the code was compiled for. The code is heavily templated, and requires explicit template instantiation. Therefore, certain number of channels and number of interpolation nodes are (by default) not supported to limit build time. If you want to use different channels and interpolation grids, we provide simple macros in the C++ solvers, usually on top of files such as `pixsfm/bundle_adjustment/src/feature_reference_bundle_optimizer.h`.
 
 ### Out of memory
 
@@ -56,16 +56,12 @@ pip install -e . --global-option="build_ext" --global-option="--install-prefix=/
 To link against the library, we show an example in `examples/cmake_example/CMakeLists.txt`.
 
 ## Q: Can I install pycolmap from PyPI?
+
 We currently require that pycolmap is compiled from source and therefore cannot simply be installed with `pip install pycolmap`. Be aware that hloc, if installed first, will pull pycolmap from PyPI. We are looking for solutions to package binaries for pycolmap and pixsfm - any help is welcome!
 
-### Q: I got an exception "Unknown Dimensions (CHANNELS, N_NODES).
-The code is heavily templated, and requires explicit template instantiation.
-Therefore, certain number of channels and number of interpolation nodes are (by default) not supported to limit build time.
-If you want to use different channels and interpolation grids, we provide simple macros in the C++ solvers (usually on top of the files, see e.g. bundle_adjustment/src/feature_reference_bundle_adjuster.h).
+## Q: How can I analyze intermediate results during an optimization?
 
-
-### Q: How can I analyze intermediate results during an optimization?
-To inspect intermediate results during a ceres optimization (BA, KA), you can register an `pyceres.IterationCallback` to the optimizer. Here is a small example that recomputes the reprojection error in every iteration during bundle_adjustment:
+To inspect intermediate results during a ceres optimization (BA, KA), you can register an `pyceres.IterationCallback` to the optimizer. Here is a small example that recomputes the reprojection error in every iteration during Bundle Adjustment:
 
 ```python
 from pixsfm.bundle_adjustment.main import GeometricBundleAdjuster
