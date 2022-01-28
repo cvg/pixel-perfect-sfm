@@ -78,20 +78,7 @@ class ParallelOptimizer {
   auto RunParallel(std::vector<int> problem_labels, Param&... parameters)
       -> std::unordered_map<size_t, decltype(static_cast<Optimizer*>(nullptr)
                                                  ->template RunSubset<Ns...>(
-                                                     dummy, parameters...))>;
-
- protected:
-  int n_threads_;
-  double parallel_solver_time_;
-};
-
-template <typename Optimizer, typename idx_t>
-template <int... Ns, typename... Param>
-auto ParallelOptimizer<Optimizer, idx_t>::RunParallel(
-    std::vector<int> problem_labels, Param&... parameters)
-    -> std::unordered_map<size_t, decltype(static_cast<Optimizer*>(nullptr)
-                                               ->template RunSubset<Ns...>(
-                                                   dummy, parameters...))> {
+                                                     dummy, parameters...))>{
   std::map<size_t, std::unordered_set<idx_t>> problem_map;
 
   STDLOG(DEBUG) << "Creating problem sets..." << std::endl;
@@ -145,7 +132,7 @@ auto ParallelOptimizer<Optimizer, idx_t>::RunParallel(
     std::unordered_set<idx_t>& nodes_in_problem = it.second;
 
     if (parallel) {
-      thread_pool.AddTask([&]() {
+      thread_pool.AddTask([&](Param&... params) {
         if (child_process_threw_exception) {
           return;
         }
@@ -157,7 +144,7 @@ auto ParallelOptimizer<Optimizer, idx_t>::RunParallel(
               Optimizer::Create(static_cast<Optimizer*>(this));
           // Solve independent subset using suboptimizer
           auto res = suboptimizer.template RunSubset<Ns...>(nodes_in_problem,
-                                                            parameters...);
+                                                            params...);
           {
             std::lock_guard<std::mutex> lock(mutex_);
             results[it.first] = res;
@@ -176,7 +163,7 @@ auto ParallelOptimizer<Optimizer, idx_t>::RunParallel(
             child_exception = std::current_exception();
           }
         }
-      });
+      }, parameters...);
     } else {
       auto t1_c = std::chrono::high_resolution_clock::now();
 
@@ -225,5 +212,10 @@ auto ParallelOptimizer<Optimizer, idx_t>::RunParallel(
 
   return results;
 }
+
+ protected:
+  int n_threads_;
+  double parallel_solver_time_;
+};
 
 }  // namespace pixsfm
