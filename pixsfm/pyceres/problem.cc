@@ -319,7 +319,7 @@ void init_problem(py::module& m) {
              THROW_CHECK(self.HasParameterBlock(pointer));
              self.RemoveParameterBlock(pointer);
            })
-      .def("remove_parameter_block",
+      .def("remove_resdidual_block",
            [](ceres::Problem& self, ResidualBlockIDWrapper& residual_block_id) {
              self.RemoveResidualBlock(residual_block_id.id);
            });
