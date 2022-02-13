@@ -443,7 +443,7 @@ mapping:  # pixsfm.refine_colmap.PixSfM
     interpolation: ${...interpolation}  # we can use a different interpolation for KA
     level_indices: null  # we can optimize a subset of levels, by default all
     split_in_subproblems: true  # parallelize the optimization
-    max_kps_per_problem: -1  # parallelization, a lower value saves memory, conservative if -1
+    max_kps_per_problem: 50  # parallelization, a lower value saves memory, conservative if -1
     optimizer:  # optimization problem and solving
       loss:
         name: cauchy  # name of the loss function, among {huber, soft_l1, ...}
