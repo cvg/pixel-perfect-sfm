@@ -80,7 +80,7 @@ void bind_graph(py::module& m) {
           "register_matches",
           [](Graph& self, std::string imname1, std::string imname2,
              py::array_t<size_t, py::array::c_style>& matches,
-             py::array_t<double, py::array::c_style>* similarities) {
+             py::array_t<double, py::array::c_style | py::array::forcecast>& similarities) {
             py::buffer_info matches_info = matches.request();
 
             THROW_CHECK_EQ(matches_info.ndim, 2);
@@ -92,11 +92,11 @@ void bind_graph(py::module& m) {
 
             size_t n_matches = static_cast<size_t>(matches_shape[0]);
             double* sim_ptr = nullptr;
-            if (similarities) {  // Not None
-              py::buffer_info sim_info = similarities->request();
+            py::buffer_info sim_info = similarities.request();
+            if (sim_info.ndim > 0) {  // Not None
+              size_t num_scores = static_cast<size_t>(sim_info.shape[0]);
+              THROW_CHECK_EQ(n_matches, num_scores);
               sim_ptr = static_cast<double*>(sim_info.ptr);
-
-              assert(n_matches == static_cast<size_t>(sim_info.shape[0]));
             }
 
             self.RegisterMatches(imname1, imname2, matches_ptr, sim_ptr,
