@@ -75,10 +75,7 @@ class ParallelOptimizer {
   ParallelOptimizer(int n_threads) : n_threads_(n_threads) {}
 
   template <int... Ns, typename... Param>
-  auto RunParallel(std::vector<int> problem_labels, Param&... parameters)
-      -> std::unordered_map<size_t, decltype(static_cast<Optimizer*>(nullptr)
-                                                 ->template RunSubset<Ns...>(
-                                                     dummy, parameters...))>{
+  auto RunParallel(std::vector<int> problem_labels, Param&... parameters) {
   std::map<size_t, std::unordered_set<idx_t>> problem_map;
 
   STDLOG(DEBUG) << "Creating problem sets..." << std::endl;
@@ -132,7 +129,7 @@ class ParallelOptimizer {
     std::unordered_set<idx_t>& nodes_in_problem = it.second;
 
     if (parallel) {
-      thread_pool.AddTask([&](Param&... params) {
+      thread_pool.AddTask([&]() -> void {
         if (child_process_threw_exception) {
           return;
         }
@@ -144,7 +141,7 @@ class ParallelOptimizer {
               Optimizer::Create(static_cast<Optimizer*>(this));
           // Solve independent subset using suboptimizer
           auto res = suboptimizer.template RunSubset<Ns...>(nodes_in_problem,
-                                                            params...);
+                                                            parameters...);
           {
             std::lock_guard<std::mutex> lock(mutex_);
             results[it.first] = res;
@@ -163,7 +160,7 @@ class ParallelOptimizer {
             child_exception = std::current_exception();
           }
         }
-      }, parameters...);
+      });
     } else {
       auto t1_c = std::chrono::high_resolution_clock::now();
 
