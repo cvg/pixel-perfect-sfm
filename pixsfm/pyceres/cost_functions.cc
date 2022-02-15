@@ -151,7 +151,6 @@ void init_cost_functions(py::module& m) {
                 self.num_residuals(), 1);
             std::vector<Eigen::Matrix<double, -1, -1, Eigen::RowMajor>>
                 jacobians;
-            std::vector<double*> jacobian_ptrs(self.num_residuals());
             for (int i = 0; i < parameters.size(); i++) {
               py::buffer_info param_buf =
                   parameters[i]
@@ -167,7 +166,10 @@ void init_cost_functions(py::module& m) {
               jacobians.push_back(
                   Eigen::Matrix<double, -1, -1, Eigen::RowMajor>(
                       self.num_residuals(), num_dims));
-              jacobian_ptrs[i] = (jacobians[i].data());
+            }
+            std::vector<double*> jacobian_ptrs;
+            for (int i = 0; i < parameters.size(); i++) {
+              jacobian_ptrs.push_back(jacobians[i].data());
             }
 
             bool success = self.Evaluate(params.data(), residuals.data(),

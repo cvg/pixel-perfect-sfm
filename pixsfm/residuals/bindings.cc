@@ -25,7 +25,7 @@ void bind_residuals(py::module& m) {
   BindTemplate<double>(m);
 
   m.def("GeometricCostFunctor", &CreateGeometricCostFunctor);
-  m.def("GeometricConstantPoseFunctor",
+  m.def("GeometricConstantPoseCostFunctor",
         &CreateGeometricConstantPoseCostFunctor);
 }
 
