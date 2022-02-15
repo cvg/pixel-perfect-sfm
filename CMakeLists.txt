@@ -10,7 +10,7 @@ project(PIXSFM)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fPIC")  # for pybind
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fPIC -std=c++14")
 
 
 # Include helper macros and commands, and allow the included file to override
@@ -34,11 +34,6 @@ endif()
 find_package(Eigen3 3.3 REQUIRED)
 find_package(COLMAP REQUIRED)
 
-if (${CERES_VERSION} VERSION_LESS "2.0.0")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-endif()
 ################################################################################
 # Compiler specific configuration
 ################################################################################

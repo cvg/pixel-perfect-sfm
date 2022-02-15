@@ -47,7 +47,7 @@ namespace py = pybind11;
 
 void init_solver(py::module& m) {
   // The main Solve function
-  m.def("Solve",
+  m.def("solve",
         overload_cast_<const ceres::Solver::Options&, ceres::Problem*,
                        ceres::Solver::Summary*>()(&ceres::Solve),
         py::call_guard<py::gil_scoped_release>());

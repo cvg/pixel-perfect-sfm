@@ -93,7 +93,7 @@ class CostFunctionWrapper : public ceres::CostFunction {
   ceres::CostFunction* cost_function_;
 };
 
-class LocalParameterizationWrapper : ceres::LocalParameterization {
+class LocalParameterizationWrapper : public ceres::LocalParameterization {
  public:
   explicit LocalParameterizationWrapper(
       ceres::LocalParameterization* real_parameterization)
@@ -192,7 +192,7 @@ void init_problem(py::module& m) {
            [](ceres::Problem& self, py::array_t<double>& np_arr) {
              py::buffer_info info = np_arr.request();
              THROW_CHECK(self.HasParameterBlock((double*)info.ptr));
-             self.IsParameterBlockConstant((double*)info.ptr);
+             return self.IsParameterBlockConstant((double*)info.ptr);
            })
       .def("set_parameter_lower_bound",
            [](ceres::Problem& self, py::array_t<double>& np_arr, int index,
@@ -228,16 +228,18 @@ void init_problem(py::module& m) {
            [](ceres::Problem& self, py::array_t<double>& np_arr) {
              py::buffer_info info = np_arr.request();
              THROW_CHECK(self.HasParameterBlock((double*)info.ptr));
-             self.GetParameterization((double*)info.ptr);
+             return self.GetParameterization((double*)info.ptr);
            })
       .def("set_parameterization",
            [](ceres::Problem& self, py::array_t<double>& np_arr,
               ceres::LocalParameterization* local_parameterization) {
              py::buffer_info info = np_arr.request();
              THROW_CHECK(self.HasParameterBlock((double*)info.ptr));
-             self.SetParameterization((double*)info.ptr,
-                                      local_parameterization);
-           })
+             ceres::LocalParameterization* paramw = new LocalParameterizationWrapper(
+                     local_parameterization);
+             self.SetParameterization((double*)info.ptr, paramw);
+           },
+          py::keep_alive<1, 3>())  // LocalParameterization
       .def("parameter_block_size",
            [](ceres::Problem& self, py::array_t<double>& np_arr) {
              py::buffer_info info = np_arr.request();
@@ -317,7 +319,7 @@ void init_problem(py::module& m) {
              THROW_CHECK(self.HasParameterBlock(pointer));
              self.RemoveParameterBlock(pointer);
            })
-      .def("remove_parameter_block",
+      .def("remove_resdidual_block",
            [](ceres::Problem& self, ResidualBlockIDWrapper& residual_block_id) {
              self.RemoveResidualBlock(residual_block_id.id);
            });

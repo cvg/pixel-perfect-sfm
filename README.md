@@ -31,7 +31,7 @@ With `pixsfm`, you can:
 
 ## Installation
 
-`pixsfm` requires Python >=3.6 and COLMAP [installed from source](https://colmap.github.io/install.html#build-from-source) at the latest commit. The core optimization is implemented in C++ with [Ceres](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) built from source:
+`pixsfm` requires Python >=3.6, GCC >=4.9, and COLMAP [installed from source](https://colmap.github.io/install.html#build-from-source) at the latest commit. The core optimization is implemented in C++ with [Ceres](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) built from source:
 
 ```bash
 # install COLMAP following colmap.github.io/install.html#build-from-source
