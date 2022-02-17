@@ -33,17 +33,12 @@ class FeatureMap {
  public:
   FeatureMap(py::array_t<dtype, py::array::c_style> patches,
              std::vector<int>& point2D_ids,
-             std::vector<Eigen::Vector2i>& corners, py::dict metadata,
-             bool do_copy);
+             std::vector<Eigen::Vector2i>& corners, py::dict metadata);
 
   FeatureMap(py::array_t<dtype, py::array::c_style> patches,
              std::vector<int>& point2D_ids,
              std::vector<Eigen::Vector2i>& corners,
-             std::vector<Eigen::Vector2d>& scales, py::dict metadata,
-             bool do_copy);
-
-  FeatureMap(py::array_t<dtype, py::array::c_style> dense_patch,
-             Eigen::Vector2i& corner, Eigen::Vector2d& scale, bool do_copy);
+             std::vector<Eigen::Vector2d>& scales, py::dict metadata);
 
   FeatureMap(HighFive::Group& group, bool fill = false,
              std::vector<colmap::point2D_t>* point2D_ids = NULL);
@@ -93,18 +88,16 @@ class FeatureMap {
   inline void AddFeaturePatch(colmap::point2D_t point2D_idx,
                               const FeaturePatch<dtype>& patch);
 
-  inline py::array_t<dtype, py::array::c_style>& GetReferenceArray();
-
   inline std::vector<colmap::point2D_t> Keys() const;
 
  private:
   MapIdFPatch<dtype> patches_;
-  // std::vector<ssize_t> shape_;
   int channels_;
   bool is_sparse_;
-  py::array_t<dtype, py::array::c_style> reference_pyarray_;
   std::unordered_map<colmap::point2D_t, size_t> p2D_idx_to_h5id_;
-  int h5_format_;
+  int h5_format_ = -1;
+  // Use a pointer to avoid unintended calls to the python API
+  std::shared_ptr<py::array_t<dtype, py::array::c_style>> ref_array_ptr;
 };
 
 template <typename dtype>
@@ -170,12 +163,6 @@ int FeatureMap<dtype>::Channels() const {
 template <typename dtype>
 MapIdFPatch<dtype>& FeatureMap<dtype>::Patches() {
   return patches_;
-}
-
-template <typename dtype>
-inline py::array_t<dtype, py::array::c_style>&
-FeatureMap<dtype>::GetReferenceArray() {
-  return reference_pyarray_;
 }
 
 template <typename dtype>

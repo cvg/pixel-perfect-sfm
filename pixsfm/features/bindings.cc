@@ -48,7 +48,7 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
       .def(py::init<py::array_t<dtype, py::array::c_style>, Eigen::Vector2i&,
                     Eigen::Vector2d&, bool>(),
            py::arg("inarray").noconvert(), py::arg("offset"), py::arg("scale"),
-           py::arg("do_copy") = false, py::keep_alive<1, 2>())
+           py::arg("do_copy") = false)
       .def_property_readonly("data", &FPatch::AsNumpyArray)
       .def_property_readonly("shape", &FPatch::Shape)
       .def_property_readonly("corner", &FPatch::Corner)
@@ -83,9 +83,9 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
   // FeatureMap
   py::class_<FMap>(m, ("FeatureMap" + type_suffix).c_str())
       .def(py::init<py::array_t<dtype, py::array::c_style>, std::vector<int>&,
-                    std::vector<Eigen::Vector2i>&, py::dict, bool>(),
+                    std::vector<Eigen::Vector2i>&, py::dict>(),
            py::arg("patches").noconvert(), py::arg("point2D_ids"),
-           py::arg("corners"), py::arg("metadata"), py::arg("do_copy") = false)
+           py::arg("corners"), py::arg("metadata"))
       .def("fpatch", &FMap::GetFeaturePatch,
            py::return_value_policy::reference_internal)
       .def("add_fpatch", &FMap::AddFeaturePatch)
@@ -102,17 +102,16 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
            "Estimate current memory consumption in bytes.")
       .def("num_bytes", &FMap::NumBytes,
            "Estimate theoretical memory consumption in bytes.");
-  ;
 
   m.def(
       "FeatureMap",
       [](py::array_t<dtype, py::array::c_style> patches,
          std::vector<int>& point2D_ids, std::vector<Eigen::Vector2i>& corners,
-         py::dict metadata, bool do_copy) {
-        return FMap(patches, point2D_ids, corners, metadata, do_copy);
+         py::dict metadata) {
+        return FMap(patches, point2D_ids, corners, metadata);
       },
       py::arg("patches").noconvert(), py::arg("point2D_ids"),
-      py::arg("corners"), py::arg("metadata"), py::arg("do_copy") = false);
+      py::arg("corners"), py::arg("metadata"));
 
   // FeatureSet
   py::class_<FSet>(m, ("FeatureSet" + type_suffix).c_str())

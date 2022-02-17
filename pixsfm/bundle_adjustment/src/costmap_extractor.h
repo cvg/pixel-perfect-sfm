@@ -334,8 +334,7 @@ FeatureSet<dtype_o> CostMapExtractor::CreateShallowCostmapFSet(
   FeatureSet<dtype_o> cost_fset(out_channels);
   for (auto& fmap_pair : fset.FeatureMaps()) {
     std::vector<ssize_t> shape = fmap_pair.second.Shape();
-
-    FeatureMap<dtype_o> cost_fmap(shape[3], fmap_pair.second.IsSparse());
+    FeatureMap<dtype_o> cost_fmap(out_channels, fmap_pair.second.IsSparse());
     for (auto& patch_pair : fmap_pair.second.Patches()) {
       std::array<int, 3> patch_shape = {
           static_cast<int>(patch_pair.second.Height() *
