@@ -140,6 +140,7 @@ class FeaturePatch {
       1.0;  // Default no upsamping, really only required in costmaps
 
   std::array<int, 3> shape_;
+  std::shared_ptr<py::array_t<dtype, py::array::c_style>> ref_array_ptr_;
 
   PatchStatus status_;
   std::mutex mutex_;

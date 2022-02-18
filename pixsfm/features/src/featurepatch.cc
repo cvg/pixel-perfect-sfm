@@ -41,6 +41,8 @@ FeaturePatch<dtype>::FeaturePatch(
 
   status_.is_locked = true;
   status_.reference_count = 1;
+
+  ref_array_ptr_.reset(new py::array_t<dtype, py::array::c_style>(pyarray));
 }
 
 template <typename dtype>
@@ -74,7 +76,8 @@ FeaturePatch<dtype>::FeaturePatch(const FeaturePatch<dtype>& other)
       corner_(other.corner_),
       scale_(other.scale_),
       status_(other.status_),
-      upsampling_factor_(other.upsampling_factor_) {
+      upsampling_factor_(other.upsampling_factor_),
+      ref_array_ptr_(other.ref_array_ptr_) {
   if (other.IsReference()) {
     data_ptr_ = other.data_ptr_;
   } else {
@@ -91,6 +94,7 @@ FeaturePatch<dtype>::FeaturePatch(FeaturePatch<dtype>&& other)
   scale_ = std::move(other.scale_);
   status_ = std::move(other.status_);
   upsampling_factor_ = std::move(other.upsampling_factor_);
+  ref_array_ptr_ = std::move(other.ref_array_ptr_);
   if (other.IsReference()) {
     data_ptr_ = std::move(other.data_ptr_);
   } else {
@@ -107,6 +111,7 @@ FeaturePatch<dtype>& FeaturePatch<dtype>::operator=(
   shape_ = other.shape_;
   corner_ = other.corner_;
   scale_ = other.scale_;
+  ref_array_ptr_ = other.ref_array_ptr_;
   status_ = other.status_;
   upsampling_factor_ = other.upsampling_factor_;
   if (other.IsReference()) {
@@ -131,6 +136,7 @@ FeaturePatch<dtype>& FeaturePatch<dtype>::operator=(
   shape_ = std::move(other.shape_);
   corner_ = std::move(other.corner_);
   scale_ = std::move(other.scale_);
+  ref_array_ptr_ = std::move(other.ref_array_ptr_);
   status_ = std::move(other.status_);
   upsampling_factor_ = std::move(other.upsampling_factor_);
 

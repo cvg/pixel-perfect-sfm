@@ -9,7 +9,7 @@ template <typename dtype>
 FeatureMap<dtype>::FeatureMap(py::array_t<dtype, py::array::c_style> patches,
                               std::vector<int>& point2D_ids,
                               std::vector<Eigen::Vector2i>& corners,
-                              py::dict metadata, bool do_copy)
+                              py::dict metadata)
     : is_sparse_(metadata["is_sparse"].cast<bool>()), channels_(-1) {
   py::buffer_info buffer_info = patches.request();
 
@@ -38,11 +38,10 @@ FeatureMap<dtype>::FeatureMap(py::array_t<dtype, py::array::c_style> patches,
   for (int i = 0; i < n_patches; i++) {
     patches_.emplace((is_sparse_ ? point2D_ids[i] : kDensePatchId),
                      FeaturePatch<dtype>(&data_ptr[i * patch_size], patch_shape,
-                                         corners[i], scale, do_copy));
+                                         corners[i], scale, false));
   }
-  if (!do_copy) {
-    reference_pyarray_ = patches;
-  }
+
+  ref_array_ptr.reset(new py::array_t<dtype, py::array::c_style>(patches));
 }
 
 template <typename dtype>
