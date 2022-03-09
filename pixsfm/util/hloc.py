@@ -3,6 +3,8 @@ from pathlib import Path
 import h5py
 import numpy as np
 
+from hloc.utils.io import find_pair
+
 from ..base import Map_NameKeypoints
 
 
@@ -14,10 +16,6 @@ def list_h5_names(path):
                 names.append(obj.parent.name.strip('/'))
         fd.visititems(visit_fn)
     return list(set(names))
-
-
-def names_to_pair(name0, name1):
-    return '_'.join((name0.replace('/', '-'), name1.replace('/', '-')))
 
 
 def read_image_pairs(path) -> List[Tuple[str]]:
@@ -59,12 +57,14 @@ def read_matches_hloc(path: Path, pairs: Iterator[Tuple[str]]
     scores = []
     with h5py.File(path, "r") as h5f:
         for k1, k2 in pairs:
-            pair = names_to_pair(str(k1), str(k2))
+            pair, reverse = find_pair(h5f, str(k1), str(k2))
             m = h5f[pair]["matches0"].__array__()
             idx = np.where(m != -1)[0]
             m = np.stack([idx, m[idx]], -1).astype(np.uint64)
             s = h5f[pair]["matching_scores0"].__array__()
             s = s[idx].astype(np.float32)
+            if reverse:
+                m = np.flip(m, -1)
             matches.append(m)
             scores.append(s)
     return matches, scores
