@@ -5,6 +5,8 @@ import numpy as np
 
 from ..base import Map_NameKeypoints
 
+import hloc
+
 
 def list_h5_names(path):
     names = []
@@ -59,12 +61,14 @@ def read_matches_hloc(path: Path, pairs: Iterator[Tuple[str]]
     scores = []
     with h5py.File(path, "r") as h5f:
         for k1, k2 in pairs:
-            pair = names_to_pair(str(k1), str(k2))
+            pair, reverse = hloc.utils.io.find_pair(h5f, str(k1), str(k2))
             m = h5f[pair]["matches0"].__array__()
             idx = np.where(m != -1)[0]
             m = np.stack([idx, m[idx]], -1).astype(np.uint64)
             s = h5f[pair]["matching_scores0"].__array__()
             s = s[idx].astype(np.float32)
+            if reverse:
+                m = np.flip(m, -1)
             matches.append(m)
             scores.append(s)
     return matches, scores
