@@ -156,7 +156,7 @@ class FeatureExtractor:
         sparse =\
             self.conf.sparse if overwrite_sparse is None else overwrite_sparse
         w, h = image_size
-        patch_size = self.conf["patch_size"]
+        ps = self.conf["patch_size"]
 
         if keypoints is not None:
             if keypoint_ids is None:
@@ -177,10 +177,11 @@ class FeatureExtractor:
         scale = np.array((featuremap.shape[3] / w, featuremap.shape[2] / h))
 
         if sparse:
-            corners = (keypoints * scale - patch_size/2.0).astype(int)
-            ex_corners = corners  # - self.model.offset.astype(int)
+            _, c, h, w = featuremap.shape
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
             patches = extract_patches_numpy(featuremap.squeeze(0),
-                                            ex_corners, patch_size)
+                                            corners, ps)
             metadata = {"scale": scale, "is_sparse": True}
             data = {"patches": patches,
                     "corners": corners,
