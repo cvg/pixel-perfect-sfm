@@ -121,8 +121,8 @@ def features_from_image_list(
                         feature_map["keypoint_ids"],
                         feature_map["patches"],
                         feature_map["corners"],
-                        [scale
-                         for _ in range(feature_map["patches"].shape[0])],
+                        [scale for _ in
+                            range(feature_map["corners"].shape[0])],
                         feature_map["metadata"],
                         cache_format=f_conf["cache_format"])
                     del feature_map
