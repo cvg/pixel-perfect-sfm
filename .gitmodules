@@ -5,3 +5,6 @@
 	path = third-party/pybind11
 	url = https://github.com/pybind/pybind11.git
 	branch = v2.8
+[submodule "third-party/TanksAndTemples"]
+	path = third-party/TanksAndTemples
+	url = https://github.com/isl-org/TanksAndTemples
