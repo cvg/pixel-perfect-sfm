@@ -22,7 +22,7 @@ def convert_COLMAP_to_log(image_dir: Path, sparse_dir: Path,
     rec = pycolmap.Reconstruction(sparse_dir)
     name2id = {image.name: i for i, image in rec.images.items()}
 
-    image_list = sorted(image_dir.glob(f'*{ext}'))
+    image_list = sorted(p.name for p in image_dir.glob(f'*{ext}'))
     metadatas = []
     transforms = []
     for idx, name in enumerate(image_list):
@@ -41,13 +41,14 @@ def convert_COLMAP_to_log(image_dir: Path, sparse_dir: Path,
 
 
 def evaluate_scene(scene: str, paths: Paths):
-    convert_COLMAP_to_log(paths.image_dir, paths.sfm, paths.trajectory)
+    convert_COLMAP_to_log(paths.image_dir, paths.sfm/'0', paths.trajectory)
 
     if str(paths.eval_tool) not in sys.path:
         sys.path.append(str(paths.eval_tool))
     from run import run_evaluation
     run_evaluation(
-        paths.gt_dir, paths.trajectory, paths.pointcloud, paths.eval_dir)
+        str(paths.gt_dir), str(paths.trajectory),
+        str(paths.pointcloud), str(paths.eval_dir))
 
     with open(paths.eval_dir / f'{scene}.prf_tau_plotstr.txt', 'r') as fid:
         precision, recall, fscore = map(float, fid.read().split('\n')[:3])

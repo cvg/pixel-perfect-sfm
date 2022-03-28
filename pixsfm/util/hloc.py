@@ -5,6 +5,7 @@ import numpy as np
 
 from hloc.utils.io import find_pair
 
+from .colmap import read_image_pairs, write_image_pairs  # noqa
 from ..base import Map_NameKeypoints
 
 
@@ -16,17 +17,6 @@ def list_h5_names(path):
                 names.append(obj.parent.name.strip('/'))
         fd.visititems(visit_fn)
     return list(set(names))
-
-
-def read_image_pairs(path) -> List[Tuple[str]]:
-    with open(path, "r") as f:
-        pairs = [p.split() for p in f.read().rstrip('\n').split('\n')]
-    return pairs
-
-
-def write_image_pairs(path: Path, pairs: Iterator[Tuple[str]]):
-    with open(path, 'w') as fd:
-        fd.write('\n'.join(' '.join((n1, n2)) for n1, n2 in pairs))
 
 
 def read_keypoints_hloc(path: Path, names: Optional[Iterator[str]] = None,

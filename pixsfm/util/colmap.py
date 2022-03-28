@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Iterator, Tuple, Dict
 from pathlib import Path
 import numpy as np
 
@@ -27,6 +27,20 @@ def read_keypoints_from_db(database_path: Path, as_cpp_map: bool = True,
         keypoints_dict[id2name[image_id]] = keypoints
     db.close()
     return keypoints_dict
+
+
+def read_pairs_from_db(database_path: Path) -> List[Tuple[str]]:
+    db = COLMAPDatabase.connect(database_path)
+    id2name = db.image_id_to_name()
+    pairs = []
+    for pair_id, data in db.execute("SELECT pair_id, data FROM matches"):
+        id1, id2 = pair_id_to_image_ids(pair_id)
+        name1, name2 = id2name[id1], id2name[id2]
+        if data is None:
+            continue
+        pairs.append((name1, name2))
+    db.close()
+    return pairs
 
 
 def read_matches_from_db(database_path: Path
@@ -67,3 +81,14 @@ def write_keypoints_to_db(database_path: Path,
         db.add_keypoints(name2id[name], keypoints)
     db.commit()
     db.close()
+
+
+def read_image_pairs(path) -> List[Tuple[str]]:
+    with open(path, "r") as f:
+        pairs = [p.split() for p in f.read().rstrip('\n').split('\n')]
+    return pairs
+
+
+def write_image_pairs(path: Path, pairs: Iterator[Tuple[str]]):
+    with open(path, 'w') as fd:
+        fd.write('\n'.join(' '.join((n1, n2)) for n1, n2 in pairs))

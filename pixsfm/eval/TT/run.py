@@ -9,9 +9,14 @@ from .evaluation import evaluate_scene
 from ... import logger, set_debug
 from ...configs import parse_config_path, default_configs
 from ...refine_colmap import PixSfM
+from ...util.colmap import write_image_pairs, read_pairs_from_db
+from ...util.database import COLMAPDatabase
 
 
 def run_frontend(paths):
+    if paths.database.exists():
+        return
+
     logger.info("Running feature extraction.")
     cmd = f"""{paths.colmap_exe} feature_extractor \
     --database_path {paths.database} \
@@ -26,6 +31,24 @@ def run_frontend(paths):
     --database_path {paths.database} \
     --SiftMatching.use_gpu 1"""
     run_command(cmd)
+
+
+def run_geometric_verification(paths):
+    logger.info("Running geometric verification")
+    pairs_path = paths.output_dir / 'pairs.txt'
+    write_image_pairs(pairs_path,  read_pairs_from_db(paths.database))
+
+    db = COLMAPDatabase.connect(paths.database)
+    db.execute('DELETE FROM two_view_geometries;',)
+    db.commit()
+    db.close()
+
+    cmd = f"""{paths.colmap_exe} matches_importer \
+    --match_list_path {pairs_path} \
+    --match_type pairs \
+    --database_path {paths.database} \
+    --SiftMatching.use_gpu 1"""
+    run_command(cmd, verbose=True)
 
 
 def run_mapper(paths):
@@ -67,7 +90,8 @@ def run_mvs(paths):
 
 
 def main(tag: str, scenes: List[str], cfg: Optional[DictConfig],
-         dataset: Path, outputs: Path, overwrite: bool = False):
+         dataset: Path, outputs: Path, overwrite: bool = False,
+         tag_raw: str = 'raw'):
 
     results = {}
     refiner = PixSfM(cfg) if cfg is not None else None
@@ -77,30 +101,36 @@ def main(tag: str, scenes: List[str], cfg: Optional[DictConfig],
             dataset=dataset, outputs=outputs, scene=scene, tag=tag)
         feature_manager = None
         paths.output_dir.mkdir(exist_ok=True, parents=True)
+        if refiner is not None:
+            OmegaConf.save(refiner.conf, paths.output_dir / "config.yaml")
 
         if overwrite or not paths.pointcloud.exists():
             run_frontend(paths)
 
             if refiner is not None and refiner.conf.KA.apply:
-                # keypoint adjustment in-place
+                logger.info("Running the featuremetric keypoint adjustment.")
                 _, _, feature_manager = refiner.refine_keypoints_from_db(
-                    paths.database, paths.database, paths.image_dir,
+                    paths.database_refined, paths.database, paths.image_dir,
                     cache_path=paths.output_dir,
                 )
+                paths.database = paths.database_refined
+                run_geometric_verification(paths)
 
             run_mapper(paths)
 
             if refiner is not None and refiner.conf.BA.apply:
+                logger.info("Running the featuremetric bundle adjustment.")
                 sfm_refined = paths.sfm / 'refined'
                 refiner.refine_reconstruction(
                     sfm_refined/'0', paths.sfm/'0', paths.image_dir,
                     cache_path=paths.output_dir,
                     feature_manager=feature_manager)
+                paths.sfm = sfm_refined
 
             run_mvs(paths)
 
         if scene in TRAINING:
-            results[scene] = evaluate_scene(paths)
+            results[scene] = evaluate_scene(scene, paths)
 
     print(results)
 

@@ -1,0 +1,21 @@
+dense_features:
+    use_cache: true
+    overwrite_cache: true
+    patch_size: 8
+mapping:
+    dense_features: ${..dense_features}
+    KA:
+        apply: true
+        #strategy: "topological_reference"
+        #max_kps_per_problem: 1000
+        optimizer:
+            bound: 2.0  # tighter bound because smaller patches
+    BA:
+        apply: true
+        #strategy: "costmaps"
+        max_tracks_per_problem: 100
+        optimizer:
+            refine_focal_length: true
+            refine_principal_point: false
+            refine_extra_params: true
+            refine_extrinsics: true

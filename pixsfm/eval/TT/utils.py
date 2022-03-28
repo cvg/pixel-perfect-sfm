@@ -43,13 +43,14 @@ class Paths:
     image_dir: Path = '{dataset}/image_sets/{scene}/'
 
     output_dir: Path = '{outputs}/{scene}/{tag}/'
-    database: Path = '{outputs}/{scene}/{tag}/database.db'
+    database: Path = '{outputs}/{scene}/database.db'
+    database_refined: Path = '{outputs}/{scene}/{tag}/refined.db'
     sfm: Path = '{outputs}/{scene}/{tag}/sparse/'
     mvs: Path = '{outputs}/{scene}/{tag}/dense/'
     pointcloud: Path = '{outputs}/{scene}/{tag}/dense/fused.ply'
-    trajectory: Path = '{outputs}/{scene}/{tag}/dense/cameras.log'
+    trajectory: Path = '{outputs}/{scene}/{tag}/cameras.log'
 
-    gt_dir: Path = '{dataset}/traindata/{scene}/'
+    gt_dir: Path = '{dataset}/trainingdata/{scene}/'
     eval_dir: Path = '{outputs}/{scene}/{tag}/evaluation/'
     eval_tool: Path = 'third-party/TanksAndTemples/python_toolbox/evaluation/'
 
