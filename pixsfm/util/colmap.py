@@ -21,9 +21,10 @@ def read_keypoints_from_db(database_path: Path, as_cpp_map: bool = True,
         keypoints_dict = {}
     db = COLMAPDatabase.connect(str(database_path))
     id2name = db.image_id_to_name()
-    for image_id, data in db.execute("SELECT image_id, data FROM keypoints"):
-        keypoint = blob_to_array(data, np.float32, (-1, 2)).astype(np.float64)
-        keypoints_dict[id2name[image_id]] = keypoint
+    for image_id, rows, cols, data in db.execute("SELECT * FROM keypoints"):
+        keypoints = blob_to_array(data, np.float32, (rows, cols))
+        keypoints = keypoints.astype(np.float64)[:, :2]  # keep only xy
+        keypoints_dict[id2name[image_id]] = keypoints
     db.close()
     return keypoints_dict
 
