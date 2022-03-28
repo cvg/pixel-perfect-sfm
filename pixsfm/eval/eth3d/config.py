@@ -85,6 +85,7 @@ feature_configs = {
             **preprocessing,
         },
     },
+    "loftr": {}
 }
 
 match_configs = {
@@ -115,6 +116,19 @@ match_configs = {
             'do_mutual_check': True,
             'distance_threshold': (2 * (1-0.9))**0.5,  # from similarity
         }
+    },
+    "loftr": {
+        'model': {
+            'name': 'loftr',
+            'weights': 'outdoor',
+            'max_num_matches': None,
+        },
+        'preprocessing': {
+            'grayscale': True,
+            'resize_max': 1024,
+            'cache_images': True
+        },
+        'psize': 1
     },
 }
 

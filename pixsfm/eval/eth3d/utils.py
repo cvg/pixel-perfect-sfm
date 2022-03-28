@@ -1,7 +1,8 @@
 from dataclasses import dataclass, fields
 from pathlib import Path
 
-from hloc import extract_features, match_features, pairs_from_covisibility
+from hloc import extract_features, match_features, pairs_from_covisibility,\
+                 match_dense
 
 from .config import feature_configs, match_configs
 
@@ -45,12 +46,15 @@ class Paths:
 def extract_and_match(method: str, paths: Paths):
     feature_cfg = feature_configs[method]
     match_cfg = match_configs[method]
-    extract_features.main(
-        feature_cfg, paths.image_dir, image_list=paths.images,
-        feature_path=paths.features, as_half=False)
-    match_features.main(
-        match_cfg, paths.pairs, paths.features, matches=paths.matches)
-
+    if not method.startswith("loftr"):
+        extract_features.main(
+            feature_cfg, paths.image_dir, image_list=paths.images,
+            feature_path=paths.features, as_half=False)
+        match_features.main(
+            match_cfg, paths.pairs, paths.features, matches=paths.matches)
+    else:
+        match_dense.main(match_cfg, paths.pairs, paths.image_dir,
+                         features=paths.features, matches=paths.matches)
 
 def create_list_files(paths: Paths):
     images = paths.image_dir.glob('**/*.JPG')

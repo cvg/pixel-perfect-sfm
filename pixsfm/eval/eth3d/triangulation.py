@@ -70,6 +70,9 @@ def run_scene(method: str, paths: Paths, sfm: PixSfM,
         paths.features, paths.matches,
         cache_path=output_dir)
 
+    # CLeanup cache
+    sfm.resolve_cache_path(output_dir=output_dir).unlink(missing_ok=True)
+
     ply_path = output_dir / 'reconstruction.ply'
     rec.export_PLY(str(ply_path))
     results = eval_multiview(

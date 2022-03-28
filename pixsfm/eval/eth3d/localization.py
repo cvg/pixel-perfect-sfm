@@ -173,7 +173,7 @@ def run_scene(method: str, paths: Paths, sfm: PixSfM,
 
     # Pre-extract features for all images
     extractor = sfm.extractor
-    cache_path = output_dir / "dense_features.h5"
+    cache_path = sfm.resolve_cache_path(output_dir=output_dir)
     feature_manager = extract.features_from_graph(
         extractor,
         paths.image_dir,
@@ -228,6 +228,9 @@ def run_scene(method: str, paths: Paths, sfm: PixSfM,
         # Compute pose error w.r.t. ground-truth
         error = compute_pose_error(image_query, loc_dict)
         all_errors[name] = error
+
+    # CLeanup cache
+    cache_path.unlink(missing_ok=True)
 
     return all_errors
 
