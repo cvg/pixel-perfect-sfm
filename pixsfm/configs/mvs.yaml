@@ -7,7 +7,7 @@ mapping:
     KA:
         apply: true
         #strategy: "topological_reference"
-        #max_kps_per_problem: 1000
+        max_kps_per_problem: 1000
         optimizer:
             bound: 2.0  # tighter bound because smaller patches
     BA:

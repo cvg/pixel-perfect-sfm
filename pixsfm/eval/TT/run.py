@@ -47,7 +47,7 @@ def run_geometric_verification(paths):
     --match_list_path {pairs_path} \
     --match_type pairs \
     --database_path {paths.database} \
-    --SiftMatching.use_gpu 1"""
+    --SiftMatching.use_gpu 0"""
     run_command(cmd, verbose=True)
 
 
