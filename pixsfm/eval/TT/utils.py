@@ -46,6 +46,7 @@ class Paths:
     database: Path = '{outputs}/{scene}/database.db'
     database_refined: Path = '{outputs}/{scene}/{tag}/refined.db'
     sfm: Path = '{outputs}/{scene}/{tag}/sparse/'
+    sfm_refined: Path = '{outputs}/{scene}/{tag}/sparse/refined/'
     mvs: Path = '{outputs}/{scene}/{tag}/dense/'
     pointcloud: Path = '{outputs}/{scene}/{tag}/dense/fused.ply'
     trajectory: Path = '{outputs}/{scene}/{tag}/cameras.log'

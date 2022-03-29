@@ -1,5 +1,6 @@
 import argparse
 from typing import List, Optional
+from multiprocessing import Process
 from pathlib import Path
 from omegaconf import OmegaConf, DictConfig
 
@@ -33,6 +34,15 @@ def run_frontend(paths):
     run_command(cmd)
 
 
+def run_keypoint_adjustment(paths, cfg):
+    refiner = PixSfM(cfg)
+    OmegaConf.save(refiner.conf, paths.output_dir / "config_ka.yaml")
+    refiner.refine_keypoints_from_db(
+        paths.database_refined, paths.database, paths.image_dir,
+        cache_path=paths.output_dir,
+    )
+
+
 def run_geometric_verification(paths):
     logger.info("Running geometric verification")
     pairs_path = paths.output_dir / 'pairs.txt'
@@ -48,7 +58,7 @@ def run_geometric_verification(paths):
     --match_type pairs \
     --database_path {paths.database} \
     --SiftMatching.use_gpu 0"""
-    run_command(cmd, verbose=True)
+    run_command(cmd)
 
 
 def run_mapper(paths):
@@ -60,6 +70,15 @@ def run_mapper(paths):
     --image_path {paths.image_dir} \
     --output_path {paths.sfm}"""
     run_command(cmd)
+
+
+def run_bundle_adjustment(paths, cfg):
+    refiner = PixSfM(cfg)
+    OmegaConf.save(refiner.conf, paths.output_dir / "config_ba.yaml")
+    refiner.refine_reconstruction(
+        paths.sfm_refined/'0', paths.sfm/'0', paths.image_dir,
+        cache_path=paths.output_dir,
+    )
 
 
 def run_mvs(paths):
@@ -90,46 +109,39 @@ def run_mvs(paths):
 
 
 def main(tag: str, scenes: List[str], cfg: Optional[DictConfig],
-         dataset: Path, outputs: Path, overwrite: bool = False,
-         tag_raw: str = 'raw'):
+         dataset: Path, outputs: Path, overwrite: bool = False):
 
     results = {}
-    refiner = PixSfM(cfg) if cfg is not None else None
     for scene in scenes:
         logger.info("Working on scene %s.", scene)
         paths = Paths().interpolate(
             dataset=dataset, outputs=outputs, scene=scene, tag=tag)
-        feature_manager = None
         paths.output_dir.mkdir(exist_ok=True, parents=True)
-        if refiner is not None:
-            OmegaConf.save(refiner.conf, paths.output_dir / "config.yaml")
 
         if overwrite or not paths.pointcloud.exists():
             run_frontend(paths)
 
-            if refiner is not None and refiner.conf.KA.apply:
+            if cfg is not None:
                 logger.info("Running the featuremetric keypoint adjustment.")
-                _, _, feature_manager = refiner.refine_keypoints_from_db(
-                    paths.database_refined, paths.database, paths.image_dir,
-                    cache_path=paths.output_dir,
-                )
+                p = Process(target=run_keypoint_adjustment, args=(paths, cfg))
+                p.start()
+                p.join()
                 paths.database = paths.database_refined
                 run_geometric_verification(paths)
 
             run_mapper(paths)
 
-            if refiner is not None and refiner.conf.BA.apply:
+            if cfg is not None:
                 logger.info("Running the featuremetric bundle adjustment.")
-                sfm_refined = paths.sfm / 'refined'
-                refiner.refine_reconstruction(
-                    sfm_refined/'0', paths.sfm/'0', paths.image_dir,
-                    cache_path=paths.output_dir,
-                    feature_manager=feature_manager)
-                paths.sfm = sfm_refined
+                p = Process(target=run_bundle_adjustment, args=(paths, cfg))
+                p.start()
+                p.join()
+                paths.sfm = paths.sfm_refined
 
             run_mvs(paths)
 
         if scene in TRAINING:
+            logger.info("Evaluating the reconstruction results.")
             results[scene] = evaluate_scene(scene, paths)
 
     print(results)
