@@ -64,21 +64,23 @@ size_t FeatureSet<dtype>::Load(std::unordered_set<std::string>& required_maps,
   }
 
   size_t num_bytes = 0;
-  HighFive::File file(h5_path_, HighFive::File::ReadOnly);
-  HighFive::Group level_group = file.getGroup(h5_key_);
-  STDLOG(INFO) << "Loading featuremaps from H5 File." << std::endl;
-  LogProgressbar bar(required_maps.size());
-  for (auto& image_name : required_maps) {
-    HighFive::Group map_group = level_group.getGroup(image_name);
+  {
+    HighFive::File file(h5_path_, HighFive::File::ReadOnly);
+    HighFive::Group level_group = file.getGroup(h5_key_);
+    STDLOG(INFO) << "Loading featuremaps from H5 File." << std::endl;
+    LogProgressbar bar(required_maps.size());
+    for (auto& image_name : required_maps) {
+      HighFive::Group map_group = level_group.getGroup(image_name);
 
-    if (HasFeatureMap(image_name)) {
-      num_bytes += feature_maps_[image_name].LoadFromH5Group(map_group, fill);
-    } else {
-      feature_maps_.emplace(image_name,
-                            std::move(FeatureMap<dtype>(map_group, fill)));
-      num_bytes += (fill ? feature_maps_[image_name].CurrentMemory() : 0);
+      if (HasFeatureMap(image_name)) {
+        num_bytes += feature_maps_[image_name].LoadFromH5Group(map_group, fill);
+      } else {
+        feature_maps_.emplace(image_name,
+                              std::move(FeatureMap<dtype>(map_group, fill)));
+        num_bytes += (fill ? feature_maps_[image_name].CurrentMemory() : 0);
+      }
+      bar.update();
     }
-    bar.update();
   }
 
   if (!parallel_io_) {
@@ -102,34 +104,36 @@ size_t FeatureSet<dtype>::Load(
   }
 
   size_t num_bytes = 0;
-  HighFive::File file(h5_path_, HighFive::File::ReadOnly);
-  HighFive::Group level_group = file.getGroup(h5_key_);
-  STDLOG(INFO) << "Loading patches from H5 File." << std::endl;
-  size_t num_patches = 0;
-  for (auto& map_data : required_patches) {
-    num_patches += map_data.second.size();
-  }
-  LogProgressbar bar(num_patches);
-  for (auto& map_data : required_patches) {
-    std::string image_name = map_data.first;
-    std::vector<colmap::point2D_t>& required_patch_ids = map_data.second;
-
-    if (required_patch_ids.size() == 0) {
-      continue;
+  {
+    HighFive::File file(h5_path_, HighFive::File::ReadOnly);
+    HighFive::Group level_group = file.getGroup(h5_key_);
+    STDLOG(INFO) << "Loading patches from H5 File." << std::endl;
+    size_t num_patches = 0;
+    for (auto& map_data : required_patches) {
+      num_patches += map_data.second.size();
     }
+    LogProgressbar bar(num_patches);
+    for (auto& map_data : required_patches) {
+      std::string image_name = map_data.first;
+      std::vector<colmap::point2D_t>& required_patch_ids = map_data.second;
 
-    HighFive::Group map_group = level_group.getGroup(image_name);
+      if (required_patch_ids.size() == 0) {
+        continue;
+      }
 
-    if (HasFeatureMap(image_name)) {
-      num_bytes += feature_maps_.at(image_name)
-                       .LoadFromH5Group(map_group, fill, &required_patch_ids);
-    } else {
-      feature_maps_.emplace(
-          image_name,
-          std::move(FeatureMap<dtype>(map_group, fill, &required_patch_ids)));
-      num_bytes += (fill ? feature_maps_[image_name].CurrentMemory() : 0);
+      HighFive::Group map_group = level_group.getGroup(image_name);
+
+      if (HasFeatureMap(image_name)) {
+        num_bytes += feature_maps_.at(image_name)
+                        .LoadFromH5Group(map_group, fill, &required_patch_ids);
+      } else {
+        feature_maps_.emplace(
+            image_name,
+            std::move(FeatureMap<dtype>(map_group, fill, &required_patch_ids)));
+        num_bytes += (fill ? feature_maps_[image_name].CurrentMemory() : 0);
+      }
+      bar.update(map_data.second.size());
     }
-    bar.update(map_data.second.size());
   }
 
   if (!parallel_io_) {
