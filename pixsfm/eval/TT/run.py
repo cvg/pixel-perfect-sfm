@@ -35,8 +35,10 @@ def run_frontend(paths):
 
 
 def run_keypoint_adjustment(paths, cfg):
+    logger.info("Running the featuremetric keypoint adjustment.")
     refiner = PixSfM(cfg)
     OmegaConf.save(refiner.conf, paths.output_dir / "config_ka.yaml")
+    logger.info("Config: %s", OmegaConf.to_container(refiner.conf))
     refiner.refine_keypoints_from_db(
         paths.database_refined, paths.database, paths.image_dir,
         cache_path=paths.output_dir,
@@ -73,8 +75,10 @@ def run_mapper(paths):
 
 
 def run_bundle_adjustment(paths, cfg):
+    logger.info("Running the featuremetric bundle adjustment.")
     refiner = PixSfM(cfg)
     OmegaConf.save(refiner.conf, paths.output_dir / "config_ba.yaml")
+    logger.info("Config: %s", OmegaConf.to_container(refiner.conf))
     refiner.refine_reconstruction(
         paths.sfm_refined/'0', paths.sfm/'0', paths.image_dir,
         cache_path=paths.output_dir,
@@ -121,8 +125,7 @@ def main(tag: str, scenes: List[str], cfg: Optional[DictConfig],
         if overwrite or not paths.pointcloud.exists():
             run_frontend(paths)
 
-            if cfg is not None:
-                logger.info("Running the featuremetric keypoint adjustment.")
+            if cfg is not None and cfg.get('mapping', {}).get('KA', {}).get('apply', True):
                 p = Process(target=run_keypoint_adjustment, args=(paths, cfg))
                 p.start()
                 p.join()
@@ -131,8 +134,7 @@ def main(tag: str, scenes: List[str], cfg: Optional[DictConfig],
 
             run_mapper(paths)
 
-            if cfg is not None:
-                logger.info("Running the featuremetric bundle adjustment.")
+            if cfg is not None and cfg.get('mapping', {}).get('BA', {}).get('apply', True):
                 p = Process(target=run_bundle_adjustment, args=(paths, cfg))
                 p.start()
                 p.join()
