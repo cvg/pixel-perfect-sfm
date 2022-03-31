@@ -41,10 +41,18 @@ class Paths:
     colmap_exe: str = 'colmap'
 
     image_dir: Path = '{dataset}/image_sets/{scene}/'
-
     output_dir: Path = '{outputs}/{scene}/{tag}/'
+
+    # colmap
     database: Path = '{outputs}/{scene}/database.db'
     database_refined: Path = '{outputs}/{scene}/{tag}/refined.db'
+
+    # hloc
+    features: Path = '{outputs}/{scene}/features_{method}.h5'
+    matches: Path = '{outputs}/{scene}/matches_{method}.h5'
+    retrieval: Path = '{outputs}/{scene}/features_retrieval.h5'
+    pairs: Path = '{outputs}/{scene}/pairs.txt'
+
     sfm: Path = '{outputs}/{scene}/{tag}/sparse/'
     sfm_refined: Path = '{outputs}/{scene}/{tag}/sparse/refined/'
     mvs: Path = '{outputs}/{scene}/{tag}/dense/'

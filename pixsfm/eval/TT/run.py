@@ -126,6 +126,7 @@ def main(tag: str, scenes: List[str], cfg: Optional[DictConfig],
             run_frontend(paths)
 
             if cfg is not None and cfg.get('mapping', {}).get('KA', {}).get('apply', True):
+                # TODO: catch exceptions in the process
                 p = Process(target=run_keypoint_adjustment, args=(paths, cfg))
                 p.start()
                 p.join()

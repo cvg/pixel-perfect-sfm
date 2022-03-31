@@ -2,6 +2,9 @@ dense_features:
     use_cache: true
     overwrite_cache: true
     patch_size: 8
+    max_edge: 3200
+    #pyr_scales: [1.3333333]
+    #resize: BICUBIC
 mapping:
     dense_features: ${..dense_features}
     KA:

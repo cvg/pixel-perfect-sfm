@@ -1,0 +1,40 @@
+dense_features:
+    model:
+        name: "image"
+        grayscale: false
+    l2_normalize: false
+    sparse : false
+    max_edge : 3200
+    device : "cpu"
+    dtype : "half"
+interpolation:
+    nodes: [[-1.5, -1.5], [-1.5, -0.5], [-1.5, 0.5], [-1.5, 1.5], [-0.5, -1.5], [-0.5, -0.5], [-0.5, 0.5], [-0.5, 1.5], [0.5, -1.5], [0.5, -0.5], [0.5, 0.5], [0.5, 1.5], [1.5, -1.5], [1.5, -0.5], [1.5, 0.5], [1.5, 1.5]] #default: take pointwise nodes.
+    mode: "BICUBIC"
+    l2_normalize: false
+    ncc_normalize: true #only makes sense if n_nodes > 1
+mapping:
+    interpolation: ${..interpolation}
+    dense_features: ${..dense_features}
+    KA:
+        apply: false
+        #strategy: "topological_reference"
+        max_kps_per_problem: 1000
+        optimizer:
+            bound: 2.0  # tighter bound because smaller patches
+    BA:
+        apply: true
+        strategy: "patch_warp"
+        #strategy: "costmaps"
+        max_tracks_per_problem: 100
+        references:
+            loss:
+                name: "cauchy"
+                params: [0.25]
+        optimizer:
+            loss:
+                name: "cauchy"
+                params: [0.25]
+            refine_focal_length: true
+            refine_principal_point: false
+            refine_extra_params: true
+            refine_extrinsics: false
