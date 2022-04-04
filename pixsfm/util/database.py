@@ -118,7 +118,7 @@ def image_ids_to_pair_id(image_id1, image_id2):
 
 def pair_id_to_image_ids(pair_id):
     image_id2 = pair_id % MAX_IMAGE_ID
-    image_id1 = (pair_id - image_id2) / MAX_IMAGE_ID
+    image_id1 = (pair_id - image_id2) // MAX_IMAGE_ID
     return image_id1, image_id2
 
 
