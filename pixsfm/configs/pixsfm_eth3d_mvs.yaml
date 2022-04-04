@@ -1,0 +1,18 @@
+dense_features:
+    use_cache: true
+    overwrite_cache: true
+    patch_size : 16
+    max_edge: 1600
+mapping:
+    dense_features: ${..dense_features}
+    KA:
+        apply: true
+        max_kps_per_problem: 1000
+    BA:
+        apply: true
+        max_tracks_per_problem: 100
+        optimizer:
+            refine_focal_length: true
+            refine_principal_point: false
+            refine_extra_params: true
+            refine_extrinsics: true

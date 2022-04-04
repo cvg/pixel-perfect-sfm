@@ -10,6 +10,7 @@ from .config import feature_configs, match_configs
 class Paths:
     dataset: str = '{dataset}'
     outputs: str = '{outputs}'
+    colmap_exe: str = 'colmap'
 
     scene: Path = '{dataset}/{scene}/'
     image_dir: Path = '{dataset}/{scene}/images/'
@@ -27,6 +28,9 @@ class Paths:
 
     localization: Path = '{outputs}/{scene}/localization-{method}-{tag}/'
     localization_results: Path = '{outputs}/{scene}/localization-{method}-{tag}/results.json'
+
+    mvs: Path = '{outputs}/{scene}/mvs-{method}-{tag}/'
+    mvs_results: Path = '{outputs}/{scene}/mvs-{method}-{tag}/results.json'
 
     multiview_eval_tool: Path = 'multi-view-evaluation/build/ETH3DMultiViewEvaluation'
 
