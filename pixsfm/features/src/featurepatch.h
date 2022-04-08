@@ -98,6 +98,8 @@ class FeaturePatch {
   std::vector<VectorX<dtype>> GetDescriptorPatch(const int x, const int y,
                                                  int patch_size);
 
+  Eigen::Vector2i ToCorner(const Eigen::Vector2d& xy, int patch_size) const;
+
   inline int Width() const;
   inline int Height() const;
   inline int Channels() const;
@@ -122,14 +124,18 @@ class FeaturePatch {
 
   template <typename T>
   Eigen::Matrix<T, 2, 1> GetPixelCoordinates(const T* xy) const;
+  template <typename T>
+  Eigen::Matrix<T, 2, 1> GetImageCoordinates(const T* uv) const;
 
   template <typename T>
   void ToPixelCoordinates(const T* xy, T* uv) const;
+  template <typename T>
+  void ToImageCoordinates(const T* uv, T* xy) const;
 
-  Eigen::Vector2d GetPixelCoordinatesVec(const Eigen::Vector2d& xy);
+  Eigen::Vector2d GetPixelCoordinatesVec(const Eigen::Vector2d& xy) const;
+  Eigen::Vector2d GetImageCoordinatesVec(const Eigen::Vector2d& uv) const;
 
-  FeaturePatch<dtype> Slice(const Eigen::Vector2d& xy, int patch_size,
-                            bool do_copy=false);
+  FeaturePatch<dtype> Slice(const Eigen::Vector2d& xy, int patch_size);
 
  protected:
   std::vector<dtype>
@@ -250,6 +256,13 @@ void FeaturePatch<dtype>::ToPixelCoordinates(const T* xy, T* uv) const {
 
 template <typename dtype>
 template <typename T>
+void FeaturePatch<dtype>::ToImageCoordinates(const T* uv, T* xy) const {
+  xy[0] = (uv[0] / upsampling_factor_ + double(corner_[0]) + 0.5) / scale_[0];
+  xy[1] = (uv[1] / upsampling_factor_ + double(corner_[1]) + 0.5) / scale_[1];
+}
+
+template <typename dtype>
+template <typename T>
 Eigen::Matrix<T, 2, 1> FeaturePatch<dtype>::GetPixelCoordinates(
     const T* xy) const {
   Eigen::Matrix<T, 2, 1> uv;
@@ -258,9 +271,24 @@ Eigen::Matrix<T, 2, 1> FeaturePatch<dtype>::GetPixelCoordinates(
 }
 
 template <typename dtype>
+template <typename T>
+Eigen::Matrix<T, 2, 1> FeaturePatch<dtype>::GetImageCoordinates(
+    const T* uv) const {
+  Eigen::Matrix<T, 2, 1> xy;
+  ToPixelCoordinates(uv, xy.data());
+  return xy;
+}
+
+template <typename dtype>
 Eigen::Vector2d FeaturePatch<dtype>::GetPixelCoordinatesVec(
-    const Eigen::Vector2d& xy) {
+    const Eigen::Vector2d& xy) const {
   return GetPixelCoordinates(xy.data());
+}
+
+template <typename dtype>
+Eigen::Vector2d FeaturePatch<dtype>::GetImageCoordinatesVec(
+    const Eigen::Vector2d& uv) const {
+  return GetImageCoordinates(uv.data());
 }
 
 }  // namespace pixsfm
