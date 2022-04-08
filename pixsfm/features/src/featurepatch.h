@@ -275,7 +275,7 @@ template <typename T>
 Eigen::Matrix<T, 2, 1> FeaturePatch<dtype>::GetImageCoordinates(
     const T* uv) const {
   Eigen::Matrix<T, 2, 1> xy;
-  ToPixelCoordinates(uv, xy.data());
+  ToImageCoordinates(uv, xy.data());
   return xy;
 }
 
