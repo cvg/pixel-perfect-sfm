@@ -128,6 +128,9 @@ class FeaturePatch {
 
   Eigen::Vector2d GetPixelCoordinatesVec(const Eigen::Vector2d& xy);
 
+  FeaturePatch<dtype> Slice(const Eigen::Vector2d& xy, int patch_size,
+                            bool do_copy=false);
+
  protected:
   std::vector<dtype>
       data_;         // If we do not own any data, leave this uninitialized

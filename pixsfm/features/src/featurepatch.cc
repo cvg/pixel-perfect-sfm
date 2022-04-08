@@ -320,6 +320,18 @@ void FeaturePatch<dtype>::Allocate() {
   status_.reference_count = 1;
 }
 
+template <typename dtype>
+FeaturePatch<dtype> FeaturePatch<dtype>::Slice(
+  const Eigen::Vector2d& xy, int patch_size, bool do_copy) {
+  double o = patch_size / 2.0;
+  Eigen::Vector2d xy_ = GetPixelCoordinatesVec(xy);
+  Eigen::Vector2i corner = 
+    (xy_ - Eigen::Vector2d(o, o)).cast<int>();
+  return FeaturePatch<dtype> (GetEntryPtr(corner.y(), corner.x(), 0),
+                             {patch_size, patch_size, shape_[2]},
+                             corner, scale_, do_copy);
+}
+
 /*******************************************************************************
 FeaturePatch: Template Specializations
 *******************************************************************************/
