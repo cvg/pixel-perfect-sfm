@@ -23,4 +23,5 @@ target_link_libraries(pypixsfm PRIVATE pixsfm)
 PIXSFM_ADD_PYMODULE(_pixsfm
     _pixsfm/bindings.cc
 )
-target_link_libraries(_pixsfm PRIVATE pypixsfm)
+target_link_libraries(_pixsfm PRIVATE
+ pypixsfm  ${PIXSFM_INTERNAL_LIBRARIES} ${PIXSFM_EXTERNAL_LIBRARIES})
