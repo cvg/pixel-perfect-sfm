@@ -1,5 +1,5 @@
 #pragma once
-#include "sys/sysinfo.h"
+//#include "sys/sysinfo.h"
 #include "sys/types.h"
 
 #include <ceres/ceres.h>

@@ -21,7 +21,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeHelper.cmake NO_POLICY_SCOPE)
 # Options
 ################################################################################
 option(TESTS_ENABLED "Whether to build test binaries" ON)
-option(AVX2_ENABLED "Whether to compile with AVX2 support" ON)
+option(AVX2_ENABLED "Whether to compile with AVX2 support" OFF)
 
 if(TESTS_ENABLED)
     enable_testing()
