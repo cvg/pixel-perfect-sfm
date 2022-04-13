@@ -1,4 +1,4 @@
-# cmake version to be used
+## cmake version to be used
 cmake_minimum_required( VERSION 3.0 )
 
 # project name
@@ -13,6 +13,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fPIC -std=c++14")
 
 
+include(FindPythonPyEnv)
 # Include helper macros and commands, and allow the included file to override
 # the CMake policies in this file
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeHelper.cmake NO_POLICY_SCOPE)
