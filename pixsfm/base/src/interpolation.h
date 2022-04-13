@@ -18,6 +18,7 @@ namespace py = pybind11;
 #include <string>
 #include <utility>
 #include <vector>
+#include <type_traits>
 
 #include "base/src/cubic_hermite_spline_simd.h"
 
@@ -115,32 +116,34 @@ class Interpolator {
     }
   }
 
-  // The following two Evaluate overloads are needed for interfacing
-  // with automatic differentiation. The first is for when a scalar
-  // evaluation is done, and the second one is for when Jets are used.
-  void Evaluate(const double& r, const double& c, double* f) const {
-    return Evaluate(r, c, f, NULL, NULL);
-  }
-
   void IEvaluate(double r, double c, double* f, double* dfdr,
                  double* dfdc) const {
     return Evaluate(r, c, f, dfdr, dfdc);
   }
 
+
   template <typename JetT>
-  void Evaluate(const JetT& r, const JetT& c, JetT* f) const {
-    throw(std::runtime_error(
-        "Default Interpolator::Evaluate  not implemented."));
-//    double frc[Grid::DATA_DIMENSION];
-//    double dfdr[Grid::DATA_DIMENSION];
-//    double dfdc[Grid::DATA_DIMENSION];
-//          Evaluate(r.a, c.a, frc, dfdr, dfdc);
-//          for (int i = 0; i < Grid::DATA_DIMENSION; ++i) {
-//            f[i].a = frc[i];
-//            f[i].v = dfdr[i] * r.v + dfdc[i] * c.v;
-//          }
-//
+   void Evaluate(const JetT& r, const JetT& c, JetT* f) const {
+   double frc[Grid::DATA_DIMENSION];
+    double dfdr[Grid::DATA_DIMENSION];
+    double dfdc[Grid::DATA_DIMENSION];
+    Evaluate(r.a, c.a, frc, dfdr, dfdc);
+    for (int i = 0; i < Grid::DATA_DIMENSION; ++i) {
+      f[i].a = frc[i];
+      f[i].v = dfdr[i] * r.v + dfdc[i] * c.v;
+    }
   }
+
+
+    // The following two Evaluate overloads are needed for interfacing
+    // with automatic differentiation. The first is for when a scalar
+    // evaluation is done, and the second one is for when Jets are used.
+    template <>
+    void Evaluate(const double& r, const double& c, double* f) const {
+      return Evaluate(r, c, f, NULL, NULL);
+      //Without template specialization it does not work with Clang
+    }
+
 
   virtual int OutputDimension() const { return Grid::DATA_DIMENSION; }
 
@@ -611,7 +614,7 @@ class NearestNeighborInterpolator : public Interpolator<Grid> {
 
 template <typename Grid>
 class PixelInterpolator : public Interpolator<Grid> {
-  // template <typename JetT> using Interpolator<Grid>::Evaluate<JetT>;
+//  template <typename JetT> using Interpolator<Grid>::Evaluate<JetT>;
   using Interpolator<Grid>::grid_;
 
  public:
