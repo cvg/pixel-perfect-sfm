@@ -129,14 +129,17 @@ class Interpolator {
 
   template <typename JetT>
   void Evaluate(const JetT& r, const JetT& c, JetT* f) const {
-    double frc[Grid::DATA_DIMENSION];
-    double dfdr[Grid::DATA_DIMENSION];
-    double dfdc[Grid::DATA_DIMENSION];
-    Evaluate(r.a, c.a, frc, dfdr, dfdc);
-    for (int i = 0; i < Grid::DATA_DIMENSION; ++i) {
-      f[i].a = frc[i];
-      f[i].v = dfdr[i] * r.v + dfdc[i] * c.v;
-    }
+    throw(std::runtime_error(
+        "Default Interpolator::Evaluate  not implemented."));
+//    double frc[Grid::DATA_DIMENSION];
+//    double dfdr[Grid::DATA_DIMENSION];
+//    double dfdc[Grid::DATA_DIMENSION];
+//          Evaluate(r.a, c.a, frc, dfdr, dfdc);
+//          for (int i = 0; i < Grid::DATA_DIMENSION; ++i) {
+//            f[i].a = frc[i];
+//            f[i].v = dfdr[i] * r.v + dfdc[i] * c.v;
+//          }
+//
   }
 
   virtual int OutputDimension() const { return Grid::DATA_DIMENSION; }

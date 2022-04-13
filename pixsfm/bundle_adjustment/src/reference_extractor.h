@@ -327,7 +327,8 @@ ReferenceExtractor::InitReferences(const std::vector<int>& problem_labels) {
   return references;
 }
 
-template <int N_NODES = Eigen::Dynamic>
+//template <int N_NODES = Eigen::Dynamic>
+template <int N_NODES>
 OffsetMatrix3d<N_NODES> NodeOffsets3D(
     const colmap::Image& image, const colmap::Camera& camera,
     const Eigen::Vector3d& xyz, InterpolationConfig& interpolation_config) {
