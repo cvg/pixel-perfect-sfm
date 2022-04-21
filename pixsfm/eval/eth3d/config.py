@@ -30,14 +30,16 @@ preprocessing = {
 feature_configs = {
     "sift": {
         'model': {
-            'name': 'sift',
-            'num_octaves': 4,
-            'octave_resolution': 3,
-            'first_octave': 0,
-            'edge_thresh': 10,
-            'peak_thresh': 0.0066666666666666671,  # from COLMAP
-            'upright': False,
-            'root': True,
+            'name': 'dog',
+            'options': {
+                'num_octaves': 4,
+                'octave_resolution': 3,
+                'first_octave': 0,
+                'edge_threshold': 10,
+                'peak_threshold': 0.0066666666666666671,  # from COLMAP
+                'upright': False,
+            },
+            'descriptors': 'rootsift',
             'max_keypoints': -1
         },
         'preprocessing': {
