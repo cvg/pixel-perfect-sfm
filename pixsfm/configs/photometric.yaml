@@ -1,7 +1,7 @@
 dense_features:
     model:
         name: "image"
-        grayscale: false
+        grayscale: true
     l2_normalize: false
     sparse : false
     max_edge : 1600
@@ -37,3 +37,25 @@ mapping:
             refine_principal_point: false
             refine_extra_params: false
             refine_extrinsics: false
+            regularize_source: false
+localization:
+    dense_features: ${..dense_features}
+    interpolation: ${..interpolation}
+    target_reference: "nearest"
+    unique_inliers: "min_error"
+    overwrite_features_sparse: False
+    references:
+        compute_offsets3D: true
+    QKA:
+        apply: false
+        level_indices: null
+        feature_inlier_thresh: -1
+        optimizer:
+            print_summary: false
+    QBA:
+        apply: true
+        level_indices: null
+        optimizer:
+            print_summary: false
+            refine_focal_length: false
+            refine_extra_params: false

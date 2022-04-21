@@ -97,7 +97,7 @@ bool SingleQueryBundleOptimizer::RunQuery(
   ceres::LossFunction* loss_function = options_.loss.get();
 
   THROW_CHECK_EQ(references.size(), points3D.size());
-  THROW_CHECK_EQ(interpolation_config_.nodes.size(), 1);
+  // THROW_CHECK_EQ(interpolation_config_.nodes.size(), 1);
 
   ceres::Problem problem(options_.problem_options);
 

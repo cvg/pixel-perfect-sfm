@@ -25,7 +25,7 @@ std::vector<DescriptorMatrixXd> FindNearestReferences(
     std::vector<colmap::point3D_t> point3D_ids,
     InterpolationConfig& interpolation_config,
     std::vector<colmap::point3D_t>* patch_idxs) {
-  THROW_CHECK_EQ(interpolation_config.nodes.size(), 1);
+  // THROW_CHECK_EQ(interpolation_config.nodes.size(), 1);
   DynamicPatchInterpolator interpolator(interpolation_config);
   std::vector<DescriptorMatrixXd> closest_references;
   for (int i = 0; i < keypoints.rows(); i++) {
