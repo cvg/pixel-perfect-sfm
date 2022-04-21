@@ -10,6 +10,7 @@ import torchvision.transforms.functional as tvf
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
     default_conf = {
+        "name": "???"
     }
     output_dims = None  # num channels for each returned featuremap
     scales = None  # downscaling for each returned featuremap w.r.t input image
@@ -17,7 +18,10 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
     def __init__(self, conf):
         """Perform some logic and call the _init method of the child model."""
         super().__init__()
-        self.conf = conf = OmegaConf.merge(self.default_conf, conf)
+        default_conf = OmegaConf.merge(BaseModel.default_conf,
+                                       self.default_conf)
+        OmegaConf.set_struct(default_conf, True)  # Disallow additional values
+        self.conf = conf = OmegaConf.merge(default_conf, conf)
         OmegaConf.set_readonly(conf, True)
         OmegaConf.set_struct(conf, True)
 

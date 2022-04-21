@@ -38,7 +38,7 @@ class FeatureExtractor:
         'max_edge': 1600,
         'model': {
             "name": "s2dnet",
-            **dynamic_load(models, "s2dnet").default_conf,
+            # model params
         },
         'patch_size': 16,
         'pyr_scales': [1.0],
