@@ -46,6 +46,7 @@ class FeatureExtractor:
         'sparse': True,
         'use_cache': False,
         'overwrite_cache': False,
+        'allow_dense_cache': True,  # if smaller, store dense instead of sparse
         'load_cache_on_init': False,  # Disables reloading features on demand
         'cache_format': 'chunked',
     }
@@ -75,7 +76,7 @@ class FeatureExtractor:
 
         if model is None:
             model = dynamic_load(models, conf.model.name)(conf.model)
-        self.model = model.to(self.device)
+        self.model = model.eval()
 
         OmegaConf.set_readonly(conf, True)
         OmegaConf.set_struct(conf, True)
@@ -109,6 +110,8 @@ class FeatureExtractor:
         Return:
             dict: Return dict of featuremaps. For format see features/README.md
         """
+        self.model.to(self.device)
+
         self.check_req_memory(image_path, keypoints)
         pyr_scales = self.conf["pyr_scales"]
         img_orig = PIL.Image.open(image_path)  # does actually not load data
@@ -156,7 +159,7 @@ class FeatureExtractor:
         sparse =\
             self.conf.sparse if overwrite_sparse is None else overwrite_sparse
         w, h = image_size
-        patch_size = self.conf["patch_size"]
+        ps = self.conf["patch_size"]
 
         if keypoints is not None:
             if keypoint_ids is None:
@@ -177,18 +180,37 @@ class FeatureExtractor:
         scale = np.array((featuremap.shape[3] / w, featuremap.shape[2] / h))
 
         if sparse:
-            corners = (keypoints * scale - patch_size/2.0).astype(int)
-            ex_corners = corners  # - self.model.offset.astype(int)
-            patches = extract_patches_numpy(featuremap.squeeze(0),
-                                            ex_corners, patch_size)
-            metadata = {"scale": scale, "is_sparse": True}
-            data = {"patches": patches,
-                    "corners": corners,
-                    "keypoint_ids": keypoint_ids,
-                    "metadata": metadata}
+            _, c, h, w = featuremap.shape
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
+            # whether sparse or dense requires less memory
+            better_sparse = torch.numel(featuremap) > (keypoints.shape[0] *
+                                                       ps * ps * c)
+            if better_sparse or not self.conf.use_cache or\
+                    not self.conf.allow_dense_cache or not as_dict:
+                # if we do not use cache we always store as intended
+                patches = extract_patches_numpy(featuremap.squeeze(0),
+                                                corners, ps)
+                metadata = {"scale": scale, "is_sparse": True,
+                            "patch_size": ps}
+                data = {"patches": patches,
+                        "corners": corners,
+                        "keypoint_ids": keypoint_ids,
+                        "metadata": metadata}
+            else:
+                # dense data, but load sparse from cache in featuremap.cc
+                # significantly reduces disk storage on semi-dense matches
+                metadata = {"scale": scale, "is_sparse": False,
+                            "patch_size": ps}
+                data = {"patches": np.ascontiguousarray(
+                            featuremap.permute(0, 2, 3, 1).cpu().numpy()),
+                        "corners": corners,
+                        "keypoint_ids": keypoint_ids,
+                        "metadata": metadata}
         else:
             corners = np.array([[0.0, 0.0]])
-            metadata = {"scale": scale, "is_sparse": False}
+            metadata = {"scale": scale, "is_sparse": False,
+                        "patch_size": ps}
             data = {"patches": np.ascontiguousarray(
                         featuremap.permute(0, 2, 3, 1).cpu().numpy()),
                     "corners": corners,

@@ -56,8 +56,14 @@ def write_featuremap_cache_chunked(
         else:
             # for comptability with HighFive we store bools as ints
             h5_group.attrs["is_sparse"] = int(v)
+
+    chunks = [1, *patches.shape[1:]]
+    if patches.shape[0] != len(keypoint_ids):
+        chunks[1] = metadata['patch_size']
+        chunks[2] = metadata['patch_size']
+
     h5_group.create_dataset("patches", data=patches,
-                            chunks=(1, *patches.shape[1:]))
+                            chunks=tuple(chunks))
     h5_group.create_dataset("keypoint_ids", data=keypoint_ids)
     h5_group.create_dataset("corners", data=corners)
     h5_group.create_dataset("scales", data=scales)

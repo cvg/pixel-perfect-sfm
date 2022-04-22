@@ -17,8 +17,6 @@ def extract_patches_torch(
         ps: int) -> torch.Tensor:
     c, h, w = tensor.shape
     corner = torch.from_numpy(required_corners_np).long().to(tensor.device)
-    # clamping to image range
-    corner = torch.min(corner, corner.new_tensor([w, h]) - ps - 1).clamp(min=0)
     offset = torch.arange(0, ps)
 
     kw = {}

@@ -47,6 +47,8 @@ struct CostMapConfig {
 
   int num_threads = -1;
 
+  int dense_cut_size = 12;  // only applies for dense fmaps!
+
   inline int GetEffectiveChannels() {
     if (as_gradientfield) {
       if (compute_cross_derivative) {
@@ -86,9 +88,10 @@ class CostMapExtractor
                    ReferenceExtractor* ref_extractor);
 
   template <typename dtype_o, typename dtype>
-  FeatureSet<dtype_o> CreateShallowCostmapFSet(FeatureSet<dtype>& fset,
-                                               int out_channels,
-                                               double upsampling_factor);
+  FeatureSet<dtype_o> CreateShallowCostmapFSet(
+    FeatureSet<dtype>& fset, int out_channels,
+    colmap::Reconstruction& reconstruction,
+    const std::unordered_set<colmap::point3D_t>& required_p3D_ids);
 
   template <int CHANNELS, typename dtype_o, typename dtype>
   void FillPointCostmap(FeaturePatch<dtype>& fpatch, Reference& reference,
@@ -122,15 +125,26 @@ std::pair<FeatureSet<dtype_o>, Refs> CostMapExtractor::Run(
 
   int channels = fset.Channels();
 
-  FeatureSet<dtype_o> costmaps = CreateShallowCostmapFSet<dtype_o>(
-      fset, config_.GetEffectiveChannels(), config_.upsampling_factor);
+  // Get 3D points which are part of the problem
+  std::unordered_set<colmap::point3D_t> required_p3D_ids;
+  for (colmap::point3D_t i = 0; i < problem_labels.size(); i++) {
+    if (problem_labels[i] >= 0) {
+      required_p3D_ids.insert(i);
+    }
+  }
 
+  // Initialize Costmap features metadata
+  FeatureSet<dtype_o> costmaps = CreateShallowCostmapFSet<dtype_o>(
+      fset, config_.GetEffectiveChannels(), reconstruction, required_p3D_ids);
+
+  // Initialize reference data
   Refs references = ref_extractor->InitReferences(problem_labels);
 
   fset.FlushEveryN(colmap::GetEffectiveNumThreads(config_.num_threads));
 
   bool found = false;
   std::unordered_map<size_t, double> sec;
+  // Extract Costmaps
 #define REGISTER_METHOD(CHANNELS)                                           \
   if (channels == CHANNELS) {                                               \
     sec = Parallel::RunParallel<CHANNELS>(problem_labels, costmaps,         \
@@ -182,8 +196,6 @@ double CostMapExtractor::RunSubset(
       colmap::image_t image_id = track_el.image_id;
       colmap::point2D_t point2D_idx = track_el.point2D_idx;
       FeatureMap<dtype>& fmap = fview.GetFeatureMap(image_id);
-      THROW_CHECK(fmap.IsSparse());
-      FeaturePatch<dtype>& fpatch = fmap.GetFeaturePatch(point2D_idx);
 
       std::string& image_name = fview.Mapping().at(image_id);
       auto& cost_fmap = costmaps.GetFeatureMap(image_name);
@@ -191,7 +203,24 @@ double CostMapExtractor::RunSubset(
           cost_fmap.GetFeaturePatch(point2D_idx);
 
       cost_patch.Allocate();
-      FillPointCostmap<CHANNELS, dtype_o>(fpatch, reference, cost_patch);
+
+      if (fmap.IsSparse()) {
+        FillPointCostmap<CHANNELS, dtype_o>(fmap.GetFeaturePatch(point2D_idx),
+                                            reference, cost_patch);
+      } else {
+        // If the featuremap is dense, we slice a smaller patch
+        const colmap::Image& image = reconstruction.Image(image_id);
+        const colmap::Point2D& p2D = image.Point2D(point2D_idx);
+        Eigen::Vector2d xy = ProjectPointToImage(
+            reconstruction.Point3D(p2D.Point3DId()).XYZ(),
+            image.ProjectionMatrix(),
+            reconstruction.Camera(image.CameraId())
+          );
+        // Involves a copy
+        FeaturePatch<dtype> fpatch = fmap.GetFeaturePatch(kDensePatchId).Slice(
+          xy, config_.dense_cut_size);
+        FillPointCostmap<CHANNELS, dtype_o>(fpatch, reference, cost_patch);
+      }
     }
   };
   timer_.Pause();
@@ -330,28 +359,77 @@ void CostMapExtractor::FillPointCostmap(FeaturePatch<dtype>& fpatch,
 
 template <typename dtype_o, typename dtype>
 FeatureSet<dtype_o> CostMapExtractor::CreateShallowCostmapFSet(
-    FeatureSet<dtype>& fset, int out_channels, double upsampling_factor) {
+    FeatureSet<dtype>& fset, int out_channels,
+    colmap::Reconstruction& reconstruction,
+    const std::unordered_set<colmap::point3D_t>& required_p3D_ids) {
   FeatureSet<dtype_o> cost_fset(out_channels);
-  for (auto& fmap_pair : fset.FeatureMaps()) {
-    std::vector<ssize_t> shape = fmap_pair.second.Shape();
-    FeatureMap<dtype_o> cost_fmap(out_channels, fmap_pair.second.IsSparse());
-    for (auto& patch_pair : fmap_pair.second.Patches()) {
-      std::array<int, 3> patch_shape = {
-          static_cast<int>(patch_pair.second.Height() *
-                           (upsampling_factor + 1.0e-6)),
-          static_cast<int>(patch_pair.second.Width() *
-                           (upsampling_factor + 1.0e-6)),
-          out_channels};
-      cost_fmap.Patches().emplace(
-          patch_pair.first,
-          FeaturePatch<dtype_o>(
-              NULL, patch_shape, patch_pair.second.Corner(),
-              patch_pair.second.Scale()));  // No Fill, no allocation
-
-      cost_fmap.GetFeaturePatch(patch_pair.first)
-          .SetUpsamplingFactor(upsampling_factor);
+  double upsampling_factor = config_.upsampling_factor;
+  // Get observations which are part of the problem
+  std::unordered_map<colmap::image_t, std::vector<colmap::point2D_t>> req_obs;
+  for (colmap::point3D_t p3D_id : required_p3D_ids) {
+    const colmap::Track& track = reconstruction.Point3D(p3D_id).Track();
+    for (const colmap::TrackElement& track_el : track.Elements()) {
+      req_obs[track_el.image_id].push_back(track_el.point2D_idx);
     }
-    cost_fset.Emplace(fmap_pair.first, cost_fmap);
+  }
+
+  // Add a empty featurepatch for each observation in the problem
+  for (auto& points_pair : req_obs) {
+    colmap::image_t image_id = points_pair.first;
+    const colmap::Image& image = reconstruction.Image(image_id);
+    FeatureMap<dtype>& fmap = fset.GetFeatureMap(image.Name());
+    FeatureMap<dtype_o> cost_fmap(out_channels, true);
+    if (fmap.IsSparse()) {
+      // In the sparse case we just copy the metadata
+      for (auto& point2D_idx : points_pair.second) {
+        FeaturePatch<dtype>& fpatch = fmap.GetFeaturePatch(point2D_idx);
+        std::array<int, 3> patch_shape = {
+            static_cast<int>(fpatch.Height() *
+                            (upsampling_factor + 1.0e-6)),
+            static_cast<int>(fpatch.Width() *
+                            (upsampling_factor + 1.0e-6)),
+            out_channels};
+        cost_fmap.Patches().emplace(
+            point2D_idx,
+            FeaturePatch<dtype_o>(
+                NULL, patch_shape, fpatch.Corner(), fpatch.Scale()));
+        // No Fill, no allocation
+
+        cost_fmap.GetFeaturePatch(point2D_idx)
+            .SetUpsamplingFactor(upsampling_factor);
+      }
+    } else {
+      // In the dense case we slice a smaller patch
+      std::array<int, 3> patch_shape = {
+        static_cast<int>(config_.dense_cut_size *
+                        (upsampling_factor + 1.0e-6)),
+        static_cast<int>(config_.dense_cut_size *
+                        (upsampling_factor + 1.0e-6)),
+        out_channels};
+      // Get the dense feature patch
+      FeaturePatch<dtype>& dense_patch = fmap.GetFeaturePatch(kDensePatchId);
+      for (colmap::point2D_t p2D_idx : points_pair.second) {
+        const colmap::Point2D& p2D = image.Point2D(p2D_idx);
+        if (p2D.HasPoint3D()) {
+          Eigen::Vector2d xy = ProjectPointToImage(
+            reconstruction.Point3D(p2D.Point3DId()).XYZ(),
+            image.ProjectionMatrix(),
+            reconstruction.Camera(image.CameraId())
+          );
+          // We extract the corner around the reprojected observation
+          Eigen::Vector2i corner = dense_patch.ToCorner(xy, config_.dense_cut_size);
+          // No Fill, no allocation
+          cost_fmap.Patches().emplace(
+          p2D_idx,
+            FeaturePatch<dtype_o>(
+                NULL, patch_shape, corner, dense_patch.Scale()));
+
+          cost_fmap.GetFeaturePatch(p2D_idx)
+            .SetUpsamplingFactor(upsampling_factor);
+        }
+      }
+    }
+    cost_fset.Emplace(image.Name(), cost_fmap);
   }
   return cost_fset;
 }

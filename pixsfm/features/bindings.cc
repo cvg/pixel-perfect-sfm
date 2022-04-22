@@ -47,7 +47,9 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
   py::class_<FPatch>(m, ("FeaturePatch" + type_suffix).c_str())
       .def(py::init<py::array_t<dtype, py::array::c_style>, Eigen::Vector2i&,
                     Eigen::Vector2d&, bool>(),
-           py::arg("inarray").noconvert(), py::arg("offset"), py::arg("scale"),
+           py::arg("inarray").noconvert(),
+           py::arg("offset") = Eigen::VectorXi::Zero(2),
+           py::arg("scale") = Eigen::VectorXd::Ones(2),
            py::arg("do_copy") = false)
       .def_property_readonly("data", &FPatch::AsNumpyArray)
       .def_property_readonly("shape", &FPatch::Shape)
@@ -62,6 +64,8 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
       .def("has_data", &FPatch::HasData)
       .def("data_ptr", overload_cast_<>()(&FPatch::Data))
       .def("get_pixel_coords", &FPatch::GetPixelCoordinatesVec)
+      .def("slice", &FPatch::Slice)
+      .def("to_corner", &FPatch::ToCorner)
       .def("lock", &FPatch::Lock)
       .def("flush", &FPatch::Flush)
       .def_property_readonly("status", &FPatch::Status)
@@ -77,7 +81,9 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
       [](py::array_t<dtype, py::array::c_style> inarray,
          Eigen::Vector2i& offset, Eigen::Vector2d& scale,
          bool do_copy) { return FPatch(inarray, offset, scale, do_copy); },
-      py::arg("inarray").noconvert(), py::arg("offset"), py::arg("scale"),
+      py::arg("inarray").noconvert(),
+      py::arg("offset") = Eigen::VectorXi::Zero(2),
+      py::arg("scale") = Eigen::VectorXd::Ones(2),
       py::arg("do_copy") = false);
 
   // FeatureMap
