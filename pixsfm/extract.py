@@ -102,6 +102,7 @@ def features_from_image_list(
         for i in range(n_levels):
             set_grps.append(cache_file.create_group(level_prefix + str(i)))
         cache_file.close()
+    extractor.model.to(extractor.device)
     for image_name in tqdm(image_list):
         keypoints_i, keypoint_ids_i, num_kps_i = get_keypoints_and_ids(
             image_name, keypoints, req_keypoint_ids)
@@ -144,6 +145,8 @@ def features_from_image_list(
             dtype_to_fm[f_conf["dtype"]](str(cache_path),
                                          f_conf.load_cache_on_init,
                                          level_prefix)
+    # free GPU resources
+    extractor.model.to("cpu")
     return feature_manager
 
 
