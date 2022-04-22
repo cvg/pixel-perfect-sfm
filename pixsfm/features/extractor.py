@@ -75,7 +75,7 @@ class FeatureExtractor:
 
         if model is None:
             model = dynamic_load(models, conf.model.name)(conf.model)
-        self.model = model.to(self.device)
+        self.model = model.eval()
 
         OmegaConf.set_readonly(conf, True)
         OmegaConf.set_struct(conf, True)
@@ -109,6 +109,8 @@ class FeatureExtractor:
         Return:
             dict: Return dict of featuremaps. For format see features/README.md
         """
+        self.model.to(self.device)
+
         self.check_req_memory(image_path, keypoints)
         pyr_scales = self.conf["pyr_scales"]
         img_orig = PIL.Image.open(image_path)  # does actually not load data
