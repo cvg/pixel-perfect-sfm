@@ -46,11 +46,18 @@ namespace py = pybind11;
 #include "_pixsfm/src/helpers.h"
 #include "util/src/log_exceptions.h"
 
+// Ceres >=v2.1 deprecates LocalParameterization
+#define CERES_USE_MANIFOLD (CERES_VERSION_MAJOR * 100 + CERES_VERSION_MINOR) >= 201
+
 // Function to create Problem::Options with DO_NOT_TAKE_OWNERSHIP
 // This is cause we want Python to manage our memory not Ceres
 ceres::Problem::Options CreateProblemOptions() {
   ceres::Problem::Options o;
+#if CERES_USE_MANIFOLD
+  o.manifold_ownership = ceres::Ownership::TAKE_OWNERSHIP;
+#else
   o.local_parameterization_ownership = ceres::Ownership::TAKE_OWNERSHIP;
+#endif
   o.loss_function_ownership = ceres::Ownership::DO_NOT_TAKE_OWNERSHIP;
   o.cost_function_ownership = ceres::Ownership::TAKE_OWNERSHIP;
   return o;
@@ -93,6 +100,47 @@ class CostFunctionWrapper : public ceres::CostFunction {
   ceres::CostFunction* cost_function_;
 };
 
+#if CERES_USE_MANIFOLD
+class LocalParameterizationWrapper : public ceres::Manifold {
+ public:
+  explicit LocalParameterizationWrapper(ceres::Manifold* real_parameterization)
+      : parameterization_(real_parameterization) {}
+  virtual ~LocalParameterizationWrapper() {}
+
+  bool Plus(const double* x, const double* delta,
+            double* x_plus_delta) const override {
+    return parameterization_->Plus(x, delta, x_plus_delta);
+  }
+
+  bool PlusJacobian(const double* x, double* jacobian) const override {
+    return parameterization_->PlusJacobian(x, jacobian);
+  }
+
+  bool RightMultiplyByPlusJacobian(const double* x, const int num_rows,
+                          const double* global_matrix,
+                          double* local_matrix) const override {
+    return parameterization_->RightMultiplyByPlusJacobian(
+        x, num_rows, global_matrix, local_matrix);
+  }
+
+  bool Minus(const double* y, const double* x,
+             double* y_minus_x) const override {
+    return parameterization_->Minus(y, x, y_minus_x);
+  }
+
+  bool MinusJacobian(const double* x, double* jacobian) const override {
+    return parameterization_->MinusJacobian(x, jacobian);
+  }
+
+  int AmbientSize() const override { return parameterization_->AmbientSize(); }
+
+  // Size of delta.
+  int TangentSize() const override { return parameterization_->TangentSize(); }
+
+ private:
+  ceres::Manifold* parameterization_;
+};
+#else
 class LocalParameterizationWrapper : public ceres::LocalParameterization {
  public:
   explicit LocalParameterizationWrapper(
@@ -141,6 +189,7 @@ class LocalParameterizationWrapper : public ceres::LocalParameterization {
  private:
   ceres::LocalParameterization* parameterization_;
 };
+#endif
 
 void init_problem(py::module& m) {
   using options = ceres::Problem::Options;
@@ -151,8 +200,12 @@ void init_problem(py::module& m) {
                     &options::cost_function_ownership)
       .def_readonly("loss_function_ownership",
                     &options::loss_function_ownership)
+#if CERES_USE_MANIFOLD
+      .def_readonly("manifold_ownership", &options::manifold_ownership)
+#else
       .def_readonly("local_parameterization_ownership",
                     &options::local_parameterization_ownership)
+#endif
       .def_readwrite("enable_fast_removal", &options::enable_fast_removal)
       .def_readwrite("disable_all_safety_checks",
                      &options::disable_all_safety_checks);
@@ -228,16 +281,29 @@ void init_problem(py::module& m) {
            [](ceres::Problem& self, py::array_t<double>& np_arr) {
              py::buffer_info info = np_arr.request();
              THROW_CHECK(self.HasParameterBlock((double*)info.ptr));
+#if CERES_USE_MANIFOLD
+             return self.GetManifold((double*)info.ptr);
+#else
              return self.GetParameterization((double*)info.ptr);
+#endif
            })
       .def("set_parameterization",
            [](ceres::Problem& self, py::array_t<double>& np_arr,
-              ceres::LocalParameterization* local_parameterization) {
+#if CERES_USE_MANIFOLD
+              ceres::Manifold* local_parameterization
+#else
+              ceres::LocalParameterization* local_parameterization
+#endif
+              ) {
              py::buffer_info info = np_arr.request();
              THROW_CHECK(self.HasParameterBlock((double*)info.ptr));
-             ceres::LocalParameterization* paramw = new LocalParameterizationWrapper(
+             auto paramw = new LocalParameterizationWrapper(
                      local_parameterization);
+#if CERES_USE_MANIFOLD
+             self.SetManifold((double*)info.ptr, paramw);
+#else
              self.SetParameterization((double*)info.ptr, paramw);
+#endif
            },
           py::keep_alive<1, 3>())  // LocalParameterization
       .def("parameter_block_size",
@@ -307,7 +373,12 @@ void init_problem(py::module& m) {
       .def(
           "add_parameter_block",
           [](ceres::Problem& self, py::array_t<double>& values, int size,
-             ceres::LocalParameterization* local_parameterization) {
+#if CERES_USE_MANIFOLD
+             ceres::Manifold* local_parameterization
+#else
+             ceres::LocalParameterization* local_parameterization
+#endif
+             ) {
             double* pointer = static_cast<double*>(values.request().ptr);
             self.AddParameterBlock(pointer, size, local_parameterization);
           },
