@@ -9,6 +9,7 @@ namespace py = pybind11;
 
 #include <ceres/ceres.h>
 #include <colmap/base/reconstruction.h>
+#include <colmap/base/cost_functions.h>
 #include <colmap/optim/bundle_adjustment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
@@ -114,9 +115,7 @@ void QueryBundleOptimizer::ParameterizeQuery(ceres::Problem* problem,
                                              colmap::Camera& camera,
                                              double* qvec, double* tvec) {
   // Parametrize Extrinsics
-  ceres::LocalParameterization* quaternion_parameterization =
-      new ceres::QuaternionParameterization;
-  problem->SetParameterization(qvec, quaternion_parameterization);
+  colmap::SetQuaternionManifold(problem, qvec);
 
   // Parametrize Intrinsics
   const bool constant_camera = !options_.refine_focal_length &&
@@ -143,11 +142,9 @@ void QueryBundleOptimizer::ParameterizeQuery(ceres::Problem* problem,
     }
 
     if (const_camera_params.size() > 0) {
-      ceres::SubsetParameterization* camera_params_parameterization =
-          new ceres::SubsetParameterization(
-              static_cast<int>(camera.NumParams()), const_camera_params);
-      problem->SetParameterization(camera.ParamsData(),
-                                   camera_params_parameterization);
+      colmap::SetSubsetManifold(static_cast<int>(camera.NumParams()),
+                                const_camera_params, problem,
+                                camera.ParamsData());
     }
   }
 }
