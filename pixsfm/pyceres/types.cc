@@ -155,7 +155,9 @@ void init_types(py::module& m) {
           m, "SparseLinearAlgebraLibraryType")
           .value("SUITE_SPARSE",
                  ceres::SparseLinearAlgebraLibraryType::SUITE_SPARSE)
+#if (CERES_VERSION_MAJOR * 100 + CERES_VERSION_MINOR) < 202  // < v2.2
           .value("CX_SPARSE", ceres::SparseLinearAlgebraLibraryType::CX_SPARSE)
+#endif
           .value("EIGEN_SPARSE",
                  ceres::SparseLinearAlgebraLibraryType::EIGEN_SPARSE)
           // .value("ACCELERATE_SPARSE",
