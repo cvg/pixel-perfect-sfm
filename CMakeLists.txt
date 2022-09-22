@@ -10,17 +10,6 @@ project(PIXSFM)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fPIC")
 
-if (${CERES_VERSION} VERSION_LESS "2.2.0")
-    set(CMAKE_CXX_STANDARD 14)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-else()
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-endif()
-
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-
-
 # Include helper macros and commands, and allow the included file to override
 # the CMake policies in this file
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeHelper.cmake NO_POLICY_SCOPE)
@@ -41,6 +30,19 @@ endif()
 # find_package(CUDA ${CUDA_MIN_VERSION} REQUIRED) #not-required
 find_package(Eigen3 3.3 REQUIRED)
 find_package(COLMAP REQUIRED)
+
+################################################################################
+# Select correct C/C++ standard
+################################################################################
+if (${CERES_VERSION} VERSION_LESS "2.2.0")
+    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+else()
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+endif()
+
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 ################################################################################
 # Compiler specific configuration
