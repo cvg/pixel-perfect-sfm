@@ -318,5 +318,5 @@ size_t FeatureMap<dtype>::NumBytes() const {
 
 template class FeatureMap<double>;
 template class FeatureMap<float>;
-template class FeatureMap<float16>;
+template class FeatureMap<half>;
 }  // namespace pixsfm

@@ -12,7 +12,6 @@ namespace py = pybind11;
 #include "features/bindings.cc"
 #include "keypoint_adjustment/bindings.cc"
 #include "localization/bindings.cc"
-#include "pyceres/pyceres.cc"
 #include "residuals/bindings.cc"
 #include "util/bindings.cc"
 

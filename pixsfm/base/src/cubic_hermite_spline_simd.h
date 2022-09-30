@@ -1,6 +1,6 @@
 #include "Eigen/Core"
 
-#include "third-party/half.h"
+#include "third-party/half.hpp"
 
 // The following definition enables or disables fast interpolation
 // On gcc we need -mavx2, -mfma, -mf16c
@@ -14,6 +14,8 @@
 #if AVX2_ENABLED
 #include <immintrin.h>
 #endif
+
+using half = half_float::half;
 
 namespace pixsfm {
 

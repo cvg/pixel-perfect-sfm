@@ -326,6 +326,6 @@ FeaturePatch: Template Specializations
 
 template class FeaturePatch<double>;
 template class FeaturePatch<float>;
-template class FeaturePatch<float16>;
+template class FeaturePatch<half>;
 
 }  // namespace pixsfm

@@ -324,6 +324,6 @@ colmap::image_t FeatureView<dtype>::FindImageId(const std::string& image_name) {
 
 template class FeatureView<double>;
 template class FeatureView<float>;
-template class FeatureView<float16>;
+template class FeatureView<half>;
 
 }  // namespace pixsfm

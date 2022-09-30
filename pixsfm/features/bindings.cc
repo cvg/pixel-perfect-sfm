@@ -19,15 +19,15 @@ namespace py = pybind11;
 
 #include "base/src/graph.h"
 
-PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<float16>);
+PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<half>);
 PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<float>);
 PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<double>);
 
-PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<float16>);
+PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<half>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<float>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<double>);
 
-PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<float16>);
+PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<half>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<float>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<double>);
 
@@ -267,17 +267,17 @@ void bind_features(py::module& m) {
 
   py::class_<DynamicPatchInterpolator>(m, "PatchInterpolator")
       .def(py::init<const InterpolationConfig&>())
-      .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, float16>)
+      .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, half>)
       .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, float>)
       .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, double>)
       .def("interpolate_nodes",
-           &DynamicPatchInterpolator::InterpolateNodes<-1, -1, float16>)
+           &DynamicPatchInterpolator::InterpolateNodes<-1, -1, half>)
       .def("interpolate_nodes",
            &DynamicPatchInterpolator::InterpolateNodes<-1, -1, float>)
       .def("interpolate_nodes",
            &DynamicPatchInterpolator::InterpolateNodes<-1, -1, double>)
       .def("interpolate_local",
-           &DynamicPatchInterpolator::InterpolateLocal<-1, float16>)
+           &DynamicPatchInterpolator::InterpolateLocal<-1, half>)
       .def("interpolate_local",
            &DynamicPatchInterpolator::InterpolateLocal<-1, float>)
       .def("interpolate_local",
@@ -286,7 +286,7 @@ void bind_features(py::module& m) {
   py::bind_map<std::unordered_map<colmap::point3D_t, Reference>>(
       m, "Map_IdReference");
 
-  BindFeatureTemplate<float16>(m, "_f16");
+  BindFeatureTemplate<half>(m, "_f16");
   BindFeatureTemplate<double>(m, "_f64");
   BindFeatureTemplate<float>(m, "_f32");
 }

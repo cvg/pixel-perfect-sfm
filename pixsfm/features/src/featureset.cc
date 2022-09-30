@@ -271,6 +271,6 @@ size_t FeatureSet<dtype>::NumBytes() const {
 
 template class FeatureSet<double>;
 template class FeatureSet<float>;
-template class FeatureSet<float16>;
+template class FeatureSet<half>;
 
 }  // namespace pixsfm
