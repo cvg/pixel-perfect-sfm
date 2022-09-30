@@ -65,7 +65,7 @@ To inspect intermediate results during a ceres optimization (BA, KA), you can re
 
 ```python
 from pixsfm.bundle_adjustment.main import GeometricBundleAdjuster
-from pixsfm import pyceres
+import pyceres
 import pycolmap
 
 class ReconstructionCallback(pyceres.IterationCallback):

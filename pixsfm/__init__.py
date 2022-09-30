@@ -18,7 +18,7 @@ from ._pixsfm import *  # noqa F403
 
 from . import (  # noqa F403
     base, features, bundle_adjustment, keypoint_adjustment,
-    extract, localization, util, cpplog, pyceres
+    extract, localization, util, cpplog
 )
 
 cpplog.level = 1  # do not log DEBUG
