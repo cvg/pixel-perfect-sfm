@@ -2,7 +2,7 @@ import numpy as np
 from omegaconf import OmegaConf, DictConfig
 
 from .._pixsfm import _util as util
-from ..pyceres import ListIterationCallback
+from pyceres import ListIterationCallback
 
 from .. import logger
 
