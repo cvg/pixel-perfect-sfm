@@ -46,7 +46,6 @@ class FeatureExtractor:
         'sparse': True,
         'use_cache': False,
         'overwrite_cache': False,
-        'allow_dense_cache': True,  # if smaller, store dense instead of sparse
         'load_cache_on_init': False,  # Disables reloading features on demand
         'cache_format': 'chunked',
     }
@@ -179,35 +178,29 @@ class FeatureExtractor:
 
         scale = np.array((featuremap.shape[3] / w, featuremap.shape[2] / h))
 
-        if sparse:
-            _, c, h, w = featuremap.shape
-            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
-            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
-            # whether sparse or dense requires less memory
+        _, c, h, w = featuremap.shape
+        # check whether sparse or dense requires less memory
+        if keypoints is not None:
             better_sparse = torch.numel(featuremap) > (keypoints.shape[0] *
                                                        ps * ps * c)
-            if better_sparse or not self.conf.use_cache or\
-                    not self.conf.allow_dense_cache or not as_dict:
-                # if we do not use cache we always store as intended
-                patches = extract_patches_numpy(featuremap.squeeze(0),
-                                                corners, ps)
-                metadata = {"scale": scale, "is_sparse": True,
-                            "patch_size": ps}
-                data = {"patches": patches,
-                        "corners": corners,
-                        "keypoint_ids": keypoint_ids,
-                        "metadata": metadata}
-            else:
-                # dense data, but load sparse from cache in featuremap.cc
-                # significantly reduces disk storage on semi-dense matches
-                metadata = {"scale": scale, "is_sparse": False,
-                            "patch_size": ps}
-                data = {"patches": np.ascontiguousarray(
-                            featuremap.permute(0, 2, 3, 1).cpu().numpy()),
-                        "corners": corners,
-                        "keypoint_ids": keypoint_ids,
-                        "metadata": metadata}
         else:
+            # without keypoints sparse is anyway not possible
+            better_sparse = False
+
+        if sparse and better_sparse:
+            # store as real sparse patches
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
+            patches = extract_patches_numpy(featuremap.squeeze(0),
+                                            corners, ps)
+            metadata = {"scale": scale, "is_sparse": True,
+                        "patch_size": ps}
+            data = {"patches": patches,
+                    "corners": corners,
+                    "keypoint_ids": keypoint_ids,
+                    "metadata": metadata}
+        elif not sparse or not self.conf.use_cache or not as_dict:
+            # Store as real dense patch --> also loads dense!
             corners = np.array([[0.0, 0.0]])
             metadata = {"scale": scale, "is_sparse": False,
                         "patch_size": ps}
@@ -215,6 +208,21 @@ class FeatureExtractor:
                         featuremap.permute(0, 2, 3, 1).cpu().numpy()),
                     "corners": corners,
                     "keypoint_ids": [features.kDenseId],
+                    "metadata": metadata}
+        else:
+            # dense data, but load sparse from cache in featuremap.cc
+            # significantly reduces disk storage on semi-dense matches
+            # and improves KA runtime.
+            # not compatible with FeatureMap directly, so it is mandatory
+            # to store this format to H5.
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
+            metadata = {"scale": scale, "is_sparse": False,
+                        "patch_size": ps}
+            data = {"patches": np.ascontiguousarray(
+                        featuremap.permute(0, 2, 3, 1).cpu().numpy()),
+                    "corners": corners,
+                    "keypoint_ids": keypoint_ids,
                     "metadata": metadata}
 
         if as_dict:
