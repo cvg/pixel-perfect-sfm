@@ -320,6 +320,44 @@ void FeaturePatch<dtype>::Allocate() {
   status_.reference_count = 1;
 }
 
+template <typename dtype>
+Eigen::Vector2i FeaturePatch<dtype>::ToCorner(
+    const Eigen::Vector2d& xy, int patch_size) const {
+  double o = patch_size / 2.0;
+  Eigen::Vector2d uv = GetPixelCoordinatesVec(xy);
+  Eigen::Vector2i corner =
+    (uv - Eigen::Vector2d(o, o)).cast<int>();
+  corner = corner.cwiseMax(0);
+  corner = corner.cwiseMin(
+    Eigen::Vector2i(Width() - patch_size,
+                    Height() - patch_size)
+  );
+  return corner;
+}
+
+template <typename dtype>
+FeaturePatch<dtype> FeaturePatch<dtype>::Slice(
+  const Eigen::Vector2d& xy, int patch_size) {
+  THROW_CHECK(HasData());
+  THROW_CHECK_LE(patch_size, Width());
+  THROW_CHECK_LE(patch_size, Height());
+  Eigen::Vector2i corner = ToCorner(xy, patch_size);
+  FeaturePatch<dtype> fpatch(NULL,
+                             {patch_size, patch_size, shape_[2]},
+                             corner, scale_, false);
+  fpatch.Allocate();
+  size_t s = fpatch.Width() * fpatch.Channels();
+  int x0 = corner.x();
+  int y0 = corner.y();
+
+  using slice_t = Eigen::Map<Eigen::Matrix<dtype, -1, 1>>;
+  for (int i = 0; i < fpatch.Height(); i++) {
+    slice_t(fpatch.Data()+s*i, s) = slice_t(GetEntryPtr(y0 + i, x0, 0), s);
+  }
+
+  return fpatch;
+}
+
 /*******************************************************************************
 FeaturePatch: Template Specializations
 *******************************************************************************/
