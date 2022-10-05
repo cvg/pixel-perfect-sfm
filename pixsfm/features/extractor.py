@@ -215,6 +215,8 @@ class FeatureExtractor:
             # and improves KA runtime.
             # not compatible with FeatureMap directly, so it is mandatory
             # to store this format to H5.
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
             metadata = {"scale": scale, "is_sparse": False,
                         "patch_size": ps}
             data = {"patches": np.ascontiguousarray(
