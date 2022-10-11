@@ -13,6 +13,16 @@ py::array_t<double> Reference::NpArray() const {
       dummy_data_owner);  // numpy array references this parent
 }
 
+void Reference::SetNpArray(const py::array_t<double, py::array::c_style>& desc) {
+  const py::buffer_info info = desc.request();
+  THROW_CHECK_EQ(info.ndim, 2);
+  auto *ptr = static_cast<double *>(info.ptr);
+  auto rows = static_cast<size_t>(info.shape[0]);
+  auto cols = static_cast<size_t>(info.shape[1]);
+
+  descriptor = Eigen::Map<DescriptorMatrixXd>(ptr, rows, cols); // Copy
+}
+
 const double* Reference::NodeOffsets3DData() const {
   return node_offsets3D.data();
 }

@@ -255,15 +255,17 @@ void bind_features(py::module& m) {
       .def_readwrite("is_locked", &PatchStatus::is_locked)
       .def_readwrite("reference_count", &PatchStatus::reference_count);
 
-  py::class_<Reference>(m, "Reference")
-      .def_readwrite("source", &Reference::source)
-      .def_property_readonly("descriptor", &Reference::NpArray)
-      .def_property_readonly("channels", &Reference::Channels)
-      .def_property_readonly("n_nodes", &Reference::NumNodes)
-      .def_readwrite("track", &Reference::track)
-      .def_readwrite("observations", &Reference::observations)
-      .def_readwrite("costs", &Reference::costs)
-      .def("has_observations", &Reference::HasObservations);
+  auto ref = py::class_<Reference>(m, "Reference")
+                 .def(py::init<>())
+                 .def_readwrite("source", &Reference::source)
+                 .def_property("descriptor", &Reference::NpArray, &Reference::SetNpArray)
+                 .def_property_readonly("channels", &Reference::Channels)
+                 .def_property_readonly("n_nodes", &Reference::NumNodes)
+                 .def_readwrite("track", &Reference::track)
+                 .def_readwrite("observations", &Reference::observations)
+                 .def_readwrite("costs", &Reference::costs)
+                 .def("has_observations", &Reference::HasObservations);
+  make_dataclass(ref);
 
   py::class_<DynamicPatchInterpolator>(m, "PatchInterpolator")
       .def(py::init<const InterpolationConfig&>())
