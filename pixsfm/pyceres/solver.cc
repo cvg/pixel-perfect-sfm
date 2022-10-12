@@ -131,7 +131,9 @@ void init_solver(py::module& m) {
           // &s_options::num_linear_solver_threads)
           .def_readwrite("use_explicit_schur_complement",
                          &s_options::use_explicit_schur_complement)
+#if (CERES_VERSION_MAJOR * 100 + CERES_VERSION_MINOR) < 202  // < v2.2
           .def_readwrite("use_postordering", &s_options::use_postordering)
+#endif
           .def_readwrite("dynamic_sparsity", &s_options::dynamic_sparsity)
           .def_readwrite("use_inner_iterations",
                          &s_options::use_inner_iterations)

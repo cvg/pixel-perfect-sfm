@@ -381,15 +381,12 @@ void BundleOptimizer<Derived>::ParameterizeImages(
 
       // Set pose parameterization.
       if (!constant_pose) {
-        ceres::LocalParameterization* quaternion_parameterization =
-            new ceres::QuaternionParameterization;
-        problem_->SetParameterization(qvec_data, quaternion_parameterization);
+        colmap::SetQuaternionManifold(problem_.get(), qvec_data);
         if (setup_.HasConstantTvec(image_id)) {
           const std::vector<int>& constant_tvec_idxs =
               setup_.ConstantTvec(image_id);
-          ceres::SubsetParameterization* tvec_parameterization =
-              new ceres::SubsetParameterization(3, constant_tvec_idxs);
-          problem_->SetParameterization(tvec_data, tvec_parameterization);
+          colmap::SetSubsetManifold(3, constant_tvec_idxs, problem_.get(),
+                                    tvec_data);
         }
       } else {
         problem_->SetParameterBlockConstant(qvec_data);
@@ -436,11 +433,9 @@ void BundleOptimizer<Derived>::ParameterizeCameras(
       }
 
       if (const_camera_params.size() > 0) {
-        ceres::SubsetParameterization* camera_params_parameterization =
-            new ceres::SubsetParameterization(
-                static_cast<int>(camera.NumParams()), const_camera_params);
-        problem_->SetParameterization(camera.ParamsData(),
-                                      camera_params_parameterization);
+        colmap::SetSubsetManifold(static_cast<int>(camera.NumParams()),
+                                  const_camera_params, problem_.get(),
+                                  camera.ParamsData());
       }
     }
   }
