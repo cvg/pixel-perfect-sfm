@@ -60,6 +60,7 @@ void bind_bundle_adjustment(py::module& m) {
                          &CostMapConfig::compute_cross_derivative)
           .def("get_effective_channels", &CostMapConfig::GetEffectiveChannels)
           .def_readwrite("apply_sqrt", &CostMapConfig::apply_sqrt)
+          .def_readwrite("dense_cut_size", &CostMapConfig::dense_cut_size)
           .def_readwrite("num_threads", &CostMapConfig::num_threads)
           .def_readwrite("loss", &CostMapConfig::loss, py::keep_alive<1, 2>());
   make_dataclass(costmapconf);

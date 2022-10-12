@@ -158,7 +158,7 @@ class FeatureExtractor:
         sparse =\
             self.conf.sparse if overwrite_sparse is None else overwrite_sparse
         w, h = image_size
-        patch_size = self.conf["patch_size"]
+        ps = self.conf["patch_size"]
 
         if keypoints is not None:
             if keypoint_ids is None:
@@ -178,23 +178,51 @@ class FeatureExtractor:
 
         scale = np.array((featuremap.shape[3] / w, featuremap.shape[2] / h))
 
-        if sparse:
-            corners = (keypoints * scale - patch_size/2.0).astype(int)
-            ex_corners = corners  # - self.model.offset.astype(int)
+        _, c, h, w = featuremap.shape
+        # check whether sparse or dense requires less memory
+        if keypoints is not None:
+            better_sparse = torch.numel(featuremap) > (keypoints.shape[0] *
+                                                       ps * ps * c)
+        else:
+            # without keypoints sparse is anyway not possible
+            better_sparse = False
+
+        if sparse and better_sparse:
+            # store as real sparse patches
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
             patches = extract_patches_numpy(featuremap.squeeze(0),
-                                            ex_corners, patch_size)
-            metadata = {"scale": scale, "is_sparse": True}
+                                            corners, ps)
+            metadata = {"scale": scale, "is_sparse": True,
+                        "patch_size": ps}
             data = {"patches": patches,
                     "corners": corners,
                     "keypoint_ids": keypoint_ids,
                     "metadata": metadata}
-        else:
+        elif not sparse or not self.conf.use_cache or not as_dict:
+            # Store as real dense patch --> also loads dense!
             corners = np.array([[0.0, 0.0]])
-            metadata = {"scale": scale, "is_sparse": False}
+            metadata = {"scale": scale, "is_sparse": False,
+                        "patch_size": ps}
             data = {"patches": np.ascontiguousarray(
                         featuremap.permute(0, 2, 3, 1).cpu().numpy()),
                     "corners": corners,
                     "keypoint_ids": [features.kDenseId],
+                    "metadata": metadata}
+        else:
+            # dense data, but load sparse from cache in featuremap.cc
+            # significantly reduces disk storage on semi-dense matches
+            # and improves KA runtime.
+            # not compatible with FeatureMap directly, so it is mandatory
+            # to store this format to H5.
+            corners = (keypoints * scale - ps / 2.0).astype(np.int32)
+            corners = np.clip(corners, [0, 0], np.array([w, h]) - ps - 1)
+            metadata = {"scale": scale, "is_sparse": False,
+                        "patch_size": ps}
+            data = {"patches": np.ascontiguousarray(
+                        featuremap.permute(0, 2, 3, 1).cpu().numpy()),
+                    "corners": corners,
+                    "keypoint_ids": keypoint_ids,
                     "metadata": metadata}
 
         if as_dict:
