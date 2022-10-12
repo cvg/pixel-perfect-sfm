@@ -87,6 +87,9 @@ feature_configs = {
             **preprocessing,
         },
     },
+    "loftr": {
+        # empty - we match first and then aggregate matches to features
+    },
 }
 
 match_configs = {
@@ -117,6 +120,19 @@ match_configs = {
             'do_mutual_check': True,
             'distance_threshold': (2 * (1-0.9))**0.5,  # from similarity
         }
+    },
+    "loftr": {
+        'model': {
+            'name': 'loftr',
+            'weights': 'outdoor'
+        },
+        'preprocessing': {
+            'grayscale': True,
+            'resize_max': 1024,  # 1600 is OOM on GPUS with 10GB VRAM
+            'dfactor': 8
+        },
+        'max_error': 1,  # max error for assigned keypoints (in px)
+        'cell_size': 1,  # size of quantization patch (max 1 kp/patch)
     },
 }
 
