@@ -7,6 +7,8 @@ from omegaconf import OmegaConf
 import PIL
 import torchvision.transforms.functional as tvf
 
+from ... import logger
+
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
     default_conf = {
@@ -24,6 +26,7 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         self.conf = conf = OmegaConf.merge(default_conf, conf)
         OmegaConf.set_readonly(conf, True)
         OmegaConf.set_struct(conf, True)
+        self.device = torch.device('cpu')
 
         self._init(conf)
         assert(self.output_dims is not None)
@@ -58,3 +61,16 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
             return tens.to(dtype=torch.get_default_dtype()).div(255)
         else:
             return tens
+
+    def to(self, *args, **kwargs):
+        device = kwargs.get('device')
+        if device is None:
+            match = [a for a in args if isinstance(a, (torch.device, str))]
+            if len(match) > 0:
+                device = match[0]
+        if device is not None:
+            device = torch.device(device)
+            if self.device != device:
+                logger.debug(f'Transfer model from {self.device} to {device}')
+            self.device = device
+        return super().to(*args, **kwargs)
