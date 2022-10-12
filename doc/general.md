@@ -18,7 +18,7 @@ The codebase can be called and configured at different levels from Python:
 
 2. call the individual objects for KA or BA and use the problem_setup to decide on which parameters are optimized or set constant.
 
-3. build a custom featuremetric optimization: manually add the different residuals and parameters and setup the Ceres problem and solver - see [the documentation of PyCeres](https://github.com/Edwinem/ceres_python_bindings), our own port in `pixsfm/pyceres`, and the different residuals in `pixsfm/residuals`
+3. build a custom featuremetric optimization: manually add the different residuals and parameters and setup the Ceres problem and solver - see our own port [`pyceres`](https://github.com/cvg/pyceres), and the different residuals in `pixsfm/residuals`
 
 ### Managing Options
 We use [OmegaConf](https://omegaconf.readthedocs.io/) for merging configs in Python and accept both YAML files and command line dotlists as input.

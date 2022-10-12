@@ -96,7 +96,7 @@ void bind_localization(py::module& m) {
   auto sqba =
       py::class_<SingleQueryBundleOptimizer>(m, "QueryBundleOptimizer")
           .def(py::init<QueryBundleOptimizerOptions, InterpolationConfig>());
-  BindSingleQueryBundleOptimizer<float16>(sqba);
+  BindSingleQueryBundleOptimizer<half>(sqba);
   BindSingleQueryBundleOptimizer<float>(sqba);
   BindSingleQueryBundleOptimizer<double>(sqba);
   // sqba.def("summary", &SingleQueryBundleOptimizer::Summary);
@@ -104,12 +104,12 @@ void bind_localization(py::module& m) {
   auto sqka =
       py::class_<SingleQueryKeypointOptimizer>(m, "QueryKeypointOptimizer")
           .def(py::init<QueryKeypointOptimizerOptions, InterpolationConfig>());
-  BindSingleQueryKeypointOptimizer<float16>(sqka);
+  BindSingleQueryKeypointOptimizer<half>(sqka);
   BindSingleQueryKeypointOptimizer<float>(sqka);
   BindSingleQueryKeypointOptimizer<double>(sqka);
   // sqka.def("summary", &SingleQueryKeypointOptimizer::Summary);
 
-  BindQueryRefinementTemplate<float16>(m, "_f16");
+  BindQueryRefinementTemplate<half>(m, "_f16");
   BindQueryRefinementTemplate<float>(m, "_f32");
   BindQueryRefinementTemplate<double>(m, "_f64");
 }

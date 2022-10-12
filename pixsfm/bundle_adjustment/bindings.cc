@@ -172,14 +172,14 @@ void bind_bundle_adjustment(py::module& m) {
   auto r = py::class_<ReferenceExtractor>(m, "ReferenceExtractor")
                .def(py::init<ReferenceConfig&, InterpolationConfig&>());
 
-  BindReferenceExtractor<float16>(r);
+  BindReferenceExtractor<half>(r);
   BindReferenceExtractor<float>(r);
   BindReferenceExtractor<double>(r);
 
   auto c = py::class_<CostMapExtractor>(m, "CostMapExtractor")
                .def(py::init<CostMapConfig&, InterpolationConfig&>());
 
-  BindCostMapExtractor<float16>(c);
+  BindCostMapExtractor<half>(c);
   BindCostMapExtractor<float>(c);
   BindCostMapExtractor<double>(c);
 }

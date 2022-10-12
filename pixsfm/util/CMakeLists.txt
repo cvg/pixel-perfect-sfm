@@ -12,7 +12,6 @@ PIXSFM_ADD_SOURCES(
     src/threading.h src/threading.cc
     src/stringprintf.h src/stringprintf.cc
     src/py_interrupt.h
-    src/glog.cc
 )
 
 PYPIXSFM_ADD_SOURCES(bindings.cc)

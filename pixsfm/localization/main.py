@@ -5,8 +5,9 @@ from omegaconf.omegaconf import OmegaConf, DictConfig
 import numpy as np
 from collections import defaultdict
 import pycolmap
+import pyceres
 
-from .. import features, bundle_adjustment as ba, logger, pyceres
+from .. import features, bundle_adjustment as ba, logger
 from .._pixsfm import _localization as loc
 from ..base import interpolation_default_conf, solver_default_conf
 from ..features.extractor import FeatureExtractor
