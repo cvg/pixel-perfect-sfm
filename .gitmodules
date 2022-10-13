@@ -4,4 +4,4 @@
 	branch = v2.8
 [submodule "third-party/HighFive"]
 	path = third-party/HighFive
-	url = git@github.com:BlueBrain/HighFive.git
+	url = https://github.com/BlueBrain/HighFive.git
