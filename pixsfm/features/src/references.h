@@ -55,6 +55,8 @@ struct Reference {
   colmap::point2D_t SourcePoint2DIdx() const;
   py::array_t<double> NpArray() const;
 
+  void SetNpArray(const py::array_t<double, py::array::c_style>& desc);
+
   int Channels() const;
   int NumNodes() const;
   bool HasObservations() const;
