@@ -1,14 +1,17 @@
 import argparse
 import json
+from typing_extensions import NamedTuple
 import numpy as np
 from collections import defaultdict
 from copy import deepcopy
 from omegaconf import OmegaConf, DictConfig
 from pathlib import Path
 from typing import List, Set, Dict, Any, Optional
+import h5py
 
 import pycolmap
-from hloc.utils.parsers import parse_retrieval
+from hloc.utils.parsers import parse_retrieval, names_to_pair
+from hloc.match_dense import assign_keypoints, match_dense
 
 from ... import logger, set_debug, keypoint_adjustment, extract
 from ...refine_hloc import PixSfM
@@ -21,7 +24,7 @@ from ...util.misc import to_colmap_coordinates
 from .utils import (
     Paths, extract_and_match, create_list_files, create_holdout_pairs)
 from .config import SCENES, FEATURES, DEFAULT_FEATURES, LOCALIZATION_IMAGES
-from .config import DATASET_PATH, OUTPUTS_PATH
+from .config import DATASET_PATH, OUTPUTS_PATH, match_configs, feature_configs
 
 
 def copy_reconstruction_empty(rec: pycolmap.Reconstruction, target_path: Path,
@@ -38,6 +41,40 @@ def copy_reconstruction_empty(rec: pycolmap.Reconstruction, target_path: Path,
         target.register_image(image.image_id)
     target.check()
     target.write_binary(str(target_path))
+
+
+def get_dense_query_matches(conf, name, pairs, matches_path, image_dir,
+                            reconstruction, exclude, name2id):
+
+    pairs = [(n1, n2) for n1, n2 in pairs
+             if (n1 == name and n2 not in exclude)
+             or (n2 == name and n1 not in exclude)]
+    # enable query keypoint refinement of dense matcher
+    pairs = [(n1, n2) if n1 == name else (n2, n1)for n1, n2 in pairs]
+    temp_matches_path = Path(str(matches_path).replace(".h5", "_temp.h5"))
+    match_dense(conf, pairs, image_dir, temp_matches_path)
+
+    query_keypoints = []
+    query_indices = []
+    point3D_ids = []
+    with h5py.File(temp_matches_path, "r") as m:
+        for (_, ref_name) in pairs:
+            grp = m[names_to_pair(name, ref_name)]
+            q_kps = grp["keypoints0"].__array__()
+            ref_kps = grp["keypoints1"].__array__()
+            img = reconstruction.images[name2id[ref_name]]
+            kpts_ref = np.array([p2D.xy for p2D in img.points2D])
+            if kpts_ref.shape[0] == 0:
+                continue
+            kpt_ids_q = assign_keypoints(q_kps, query_keypoints, 0, update=True)
+            kpt_ids_r = assign_keypoints(ref_kps, kpts_ref, 1.0)
+            for (q_id, ref_id) in zip(kpt_ids_q, kpt_ids_r):
+                if img.points2D[ref_id].has_point3D():
+                    query_indices.append(q_id)
+                    point3D_ids.append(img.points2D[ref_id].point3D_id)
+    temp_matches_path.unlink()
+
+    return np.array(query_keypoints), query_indices, point3D_ids
 
 
 def get_query_matches(name, pairs, matches_path, reconstruction,
@@ -208,9 +245,18 @@ def run_scene(method: str, paths: Paths, sfm: PixSfM,
             feature_manager=feature_manager)
 
         # Find 2D-3D correspondences
-        loc_p2D_idxs, loc_p3D_ids = get_query_matches(
-            name, all_pairs, paths.matches, rec, holdout_set, name2id,
-        )
+        if feature_configs[method]:
+            loc_p2D_idxs, loc_p3D_ids = get_query_matches(
+                name, all_pairs, paths.matches,
+                rec, holdout_set, name2id,
+            )
+            query_kpts = keypoints[name]
+        else:
+            # semi-dense matching
+            query_kpts, loc_p2D_idxs, loc_p3D_ids = get_dense_query_matches(
+                match_configs[method], name, all_pairs, paths.matches,
+                paths.image_dir, rec, holdout_set, name2id,
+            )
 
         camera_query = rec_ref.cameras[image_query.camera_id]
 
@@ -221,7 +267,7 @@ def run_scene(method: str, paths: Paths, sfm: PixSfM,
 
         # Localize query in triangulated model
         loc_dict = localizer.localize(
-            keypoints[name], loc_p2D_idxs, loc_p3D_ids, camera_query,
+            query_kpts, loc_p2D_idxs, loc_p3D_ids, camera_query,
             paths.image_dir / name
         )
 
