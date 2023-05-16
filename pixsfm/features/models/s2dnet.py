@@ -77,7 +77,7 @@ class S2DNet(BaseModel):
         num_layers = self.hypercolumn_indices[-1] + 2  # also take the conv
 
         # Initialize architecture
-        vgg16 = models.vgg16(pretrained=conf.pretrained == 'imagenet')
+        vgg16 = models.vgg16()
         layers = list(vgg16.features.children())[:num_layers]
 
         if conf.remove_pooling_layers:
