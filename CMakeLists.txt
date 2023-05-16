@@ -49,17 +49,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 ################################################################################
 
 if (AVX2_ENABLED)
-  add_definitions("-DAVX2_ENABLED")
-  message("Compiling with AVX2 support.")
-  # @TODO investigate linking with non-avx code, it works on some machines without
-  # -DEIGEN_DONT_VECTORIZE
-  # We assume here colmap was compiled with default flags, thus we need to set
-  # -DEIGEN_MAX_ALIGN_BYTES=16 to avoid segfaults (otherwise eigen aligns
-  # on 32 bytes if avx2 enabled)
-  set(EIGEN_DISABLE_ALIGN_FLAGS
-    "-DEIGEN_MAX_ALIGN_BYTES=16 -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DEIGEN_DONT_VECTORIZE")
-  set (AVX2_CXX_FLAGS "-mavx2 -mf16c -mfma")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_CXX_FLAGS} ${EIGEN_DISABLE_ALIGN_FLAGS}")
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindAVX2.cmake")
+  CHECK_FOR_AVX2()
+  if(HAVE_AVX2)
+    add_definitions("-DAVX2_ENABLED")
+    message("Compiling with AVX2 support.")
+    # @TODO investigate linking with non-avx code, it works on some machines without
+    # -DEIGEN_DONT_VECTORIZE
+    # We assume here colmap was compiled with default flags, thus we need to set
+    # -DEIGEN_MAX_ALIGN_BYTES=16 to avoid segfaults (otherwise eigen aligns
+    # on 32 bytes if avx2 enabled)
+    set(EIGEN_DISABLE_ALIGN_FLAGS
+      "-DEIGEN_MAX_ALIGN_BYTES=16 -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DEIGEN_DONT_VECTORIZE")
+    set (AVX2_CXX_FLAGS "-mavx2 -mf16c -mfma")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${AVX2_CXX_FLAGS} ${EIGEN_DISABLE_ALIGN_FLAGS}")
+  else()
+    message("Compiling without AVX2 support.")
+    set(AVX2_ENABLED OFF)
+  endif()
 endif()
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
