@@ -124,8 +124,8 @@ void FeatureSet<dtype>::FlushEveryN(int n) {
 template <typename dtype>
 void FeatureSet<dtype>::UseParallelIO(bool do_parallel) {
   if (do_parallel) {
-    hbool_t is_threadsafe;
-    H5is_library_threadsafe(&is_threadsafe);
+    hbool_t is_threadsafe = false;
+    // H5is_library_threadsafe(&is_threadsafe);
     THROW_CHECK(is_threadsafe);
   }
   parallel_io_ = do_parallel;
