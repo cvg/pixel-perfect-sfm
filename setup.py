@@ -59,11 +59,19 @@ class CMakeBuild(build_ext):
             os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
+                      '-DVERSION_INFO={}'.format(self.distribution.get_version()),
                       '-DTESTS_ENABLED=OFF']
 
         avx2_enabled = os.environ.get("AVX2_ENABLED")
         if avx2_enabled is not None:
             cmake_args.append(f"-DAVX2_ENABLED={avx2_enabled}")
+
+        eigen_dir = os.environ.get('EIGEN3_INCLUDE_DIRS')
+        if eigen_dir is not None:
+            cmake_args += ['-DEIGEN3_INCLUDE_DIRS={}'.format(eigen_dir)]
+        qt5_dir = os.environ.get("Qt5_DIR")
+        if qt5_dir is not None:
+            cmake_args += ['-DQt5_DIR={}'.format(qt5_dir)]
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
