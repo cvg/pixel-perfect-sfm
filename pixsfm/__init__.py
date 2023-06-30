@@ -13,15 +13,16 @@ logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 logger.propagate = False
 
+import pyceres  # noqa F403
 from ._pixsfm import *  # noqa F403
 
 from . import (  # noqa F403
     base, features, bundle_adjustment, keypoint_adjustment,
-    extract, localization, util, cpplog, pyceres
+    extract, localization, util, cpplog
 )
 
 cpplog.level = 1  # do not log DEBUG
-util.glog.minloglevel = 4
+pyceres.glog.minloglevel = 4
 
 
 def set_debug():

@@ -12,7 +12,6 @@ namespace py = pybind11;
 #include "features/bindings.cc"
 #include "keypoint_adjustment/bindings.cc"
 #include "localization/bindings.cc"
-#include "pyceres/pyceres.cc"
 #include "residuals/bindings.cc"
 #include "util/bindings.cc"
 
@@ -29,7 +28,6 @@ void bind_localization(py::module&);
 void bind_features(py::module&);
 void bind_residuals(py::module&);
 void bind_util(py::module&);
-void bind_pyceres(py::module&);
 
 namespace pixsfm {
 
@@ -43,6 +41,7 @@ PYBIND11_MODULE(_pixsfm, m) {
       .def_readwrite("level", &structlog::level);
 
   m.attr("cpplog") = &LOGCFG;
+  py::module::import("pyceres");  // Load symbols for ceres classes
   py::module::import("pycolmap");  // Load symbols for colmap classes
   py::add_ostream_redirect(m, "ostream_redirect");
 
@@ -53,7 +52,6 @@ PYBIND11_MODULE(_pixsfm, m) {
   pybind11::module_ loc = m.def_submodule("_localization");
   pybind11::module_ res = m.def_submodule("_residuals");
   pybind11::module_ util = m.def_submodule("_util");
-  pybind11::module_ pyceres = m.def_submodule("pyceres");
 
   bind_base(b);
   bind_keypoint_adjustment(ka);
@@ -62,7 +60,6 @@ PYBIND11_MODULE(_pixsfm, m) {
   bind_features(f);
   bind_residuals(res);
   bind_util(util);
-  bind_pyceres(pyceres);
 }
 
 }  // namespace pixsfm

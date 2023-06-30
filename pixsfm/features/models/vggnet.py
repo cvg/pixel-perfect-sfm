@@ -95,5 +95,4 @@ class VGGNet(BaseModel):
             feature_maps.append(feature_map)
             start = idx + 1
 
-        feature_maps = self.adaptation_layers(feature_maps)
         return feature_maps

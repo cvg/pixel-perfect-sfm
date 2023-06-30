@@ -8,13 +8,13 @@
 namespace py = pybind11;
 
 #include "util/src/log_exceptions.h"
-#include <third-party/half.h>
+#include <third-party/half.hpp>
 
 #include <iostream>
 #include <regex>
 #include <string>
 
-using float16 = half_float::half;
+using half = half_float::half;
 
 template <typename... Args>
 using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
@@ -63,7 +63,7 @@ struct npy_scalar_caster {
 }  // namespace detail
 }  // namespace pybind11
 
-static_assert(sizeof(float16) == 2, "Bad size");
+static_assert(sizeof(half) == 2, "Bad size");
 
 namespace pybind11 {
 namespace detail {
@@ -75,7 +75,7 @@ constexpr int NPY_FLOAT16 = 23;
 // Kinda following:
 // https://github.com/pybind/pybind11/blob/9bb3313162c0b856125e481ceece9d8faa567716/include/pybind11/numpy.h#L1000
 template <>
-struct npy_format_descriptor<float16> {
+struct npy_format_descriptor<half> {
   static constexpr auto name = _("float16");
   static pybind11::dtype dtype() {
     handle ptr = npy_api::get().PyArray_DescrFromType_(NPY_FLOAT16);
@@ -84,7 +84,7 @@ struct npy_format_descriptor<float16> {
 };
 
 template <>
-struct type_caster<float16> : npy_scalar_caster<float16> {
+struct type_caster<half> : npy_scalar_caster<half> {
   static constexpr auto name = _("float16");
 };
 

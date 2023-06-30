@@ -9,7 +9,6 @@ add_subdirectory(localization)
 # add_subdirectory(exe)
 add_subdirectory(residuals)
 
-add_subdirectory(pyceres)
 add_subdirectory(_pixsfm)
 
 PIXSFM_ADD_STATIC_LIBRARY(pixsfm ${PIXSFM_SOURCES})

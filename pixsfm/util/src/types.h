@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 #include <colmap/util/types.h>
-#include <third-party/half.h>
+#include <third-party/half.hpp>
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -11,7 +11,7 @@
 
 namespace py = pybind11;
 
-using float16 = half_float::half;
+using half = half_float::half;
 
 namespace pixsfm {
 

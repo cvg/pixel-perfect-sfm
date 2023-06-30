@@ -5,12 +5,13 @@ from omegaconf.omegaconf import OmegaConf, DictConfig
 import numpy as np
 from collections import defaultdict
 import pycolmap
+import pyceres
 
-from .. import features, bundle_adjustment as ba, logger, pyceres
+from .. import features, bundle_adjustment as ba, logger
 from .._pixsfm import _localization as loc
 from ..base import interpolation_default_conf, solver_default_conf
 from ..features.extractor import FeatureExtractor
-from ..features import Reference, FeatureManager
+from ..features import FeatureManager, Map_IdReference
 from ..extract import features_from_reconstruction, load_features_from_cache
 from ..configs import parse_config_path
 from ..util.misc import resolve_level_indices, to_ctr, to_optim_ctr
@@ -47,7 +48,7 @@ def find_unique_inliers(idxs, pre_inliers=None):
 
 
 def find_unique_min_by_group(errors, idxs, pre_inliers=None):
-    assert(len(idxs) == len(errors))
+    assert (len(idxs) == len(errors))
     if pre_inliers is None:
         pre_inliers = [True] * len(idxs)
     errs_by_group = defaultdict(list)
@@ -249,7 +250,7 @@ class QueryBundleAdjuster:
             references: List[List[Union[np.ndarray, features.Reference]]],
             inliers: Optional[List[bool]] = None,
             point2D_idxs:  Optional[List[int]] = None):
-        assert(len(fmaps) == len(references))
+        assert (len(fmaps) == len(references))
         levels = resolve_level_indices(self.conf.level_indices, len(fmaps))
         for level in levels:
             self.refine(qvec, tvec, camera, points3D, fmaps[level],
@@ -300,7 +301,7 @@ class QueryLocalizer:
             conf: Optional[Union[str, dict, DictConfig]] = None,
             dense_features: Optional[Union[Path, FeatureManager]] = None,
             image_dir: Optional[Path] = None,
-            references: Optional[Dict[int, Reference]] = None,
+            references: Optional[List[Map_IdReference]] = None,
             extractor: Optional[FeatureExtractor] = None):
         """Query localizer.
         Holds reconstruction, extractor and references for each 3D point
@@ -380,11 +381,12 @@ class QueryLocalizer:
             self.target_reference_funcs[self.conf.target_reference]
 
         self.references = references
+        # Assure that extractor is valid
+        if self.extractor is None:
+            self.extractor = FeatureExtractor(self.conf.dense_features)
+
         if (self.references is None and
                 (self.conf.QKA.apply or self.conf.QBA.apply)):
-            # Assure that extractor is valid
-            if self.extractor is None:
-                self.extractor = FeatureExtractor(self.conf.dense_features)
             # if dense_features are a path instance, we load the
             # features from cache
             if isinstance(dense_features, Path):
@@ -393,7 +395,7 @@ class QueryLocalizer:
                 else:
                     dense_features = None
             if dense_features is None:
-                assert(image_dir is not None)
+                assert (image_dir is not None)
                 dense_features = features_from_reconstruction(
                     self.extractor, reconstruction, image_dir,
                     cache_path=dense_features)
@@ -417,8 +419,8 @@ class QueryLocalizer:
             query_camera: pycolmap.Camera,
             image_path: Path = None,
             query_fmaps: Optional[List[features.FeatureMap]] = None):
-        assert(len(pnp_point2D_idxs) == len(pnp_points3D_id))
-        assert(image_path is not None or query_fmaps is not None)
+        assert (len(pnp_point2D_idxs) == len(pnp_points3D_id))
+        assert (image_path is not None or query_fmaps is not None)
         if len(pnp_point2D_idxs) == 0:
             return {"success": False}
         pnp_points3D = [self.reconstruction.points3D[p3D_id].xyz
@@ -441,7 +443,7 @@ class QueryLocalizer:
         if require_feats:
             query_references = self.get_query_references(
                 pnp_points3D_id, query_fmaps, pnp_points2D, pnp_point2D_idxs)
-            assert(len(query_fmaps) == len(query_references))
+            assert (len(query_fmaps) == len(query_references))
 
         # Run QKA
         if self.conf.QKA.apply:

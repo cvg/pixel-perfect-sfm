@@ -153,7 +153,19 @@ size_t FeatureMap<dtype>::InitFromH5GroupChunked(
   std::vector<int> stored_keypoint_ids;
   kp_id_dataset.read(stored_keypoint_ids);
 
-  THROW_CHECK_EQ(shape[0], stored_keypoint_ids.size());
+  std::array<int, 3> patch_shape = {static_cast<int>(shape[1]),
+                                    static_cast<int>(shape[2]),
+                                    static_cast<int>(shape[3])};
+
+  if (!is_sparse_ && stored_keypoint_ids.size() > 1) {
+    // Special format for storing patch as dense but loading as sparse
+    HighFive::Attribute ps_attr = group.getAttribute("patch_size");
+    int ps;
+    ps_attr.read(ps);
+    patch_shape[0] = ps;
+    patch_shape[1] = ps;
+    is_sparse_ = true;
+  }
 
   p2D_idx_to_h5id_.clear();
   for (int& point2D_idx : stored_keypoint_ids) {
@@ -192,10 +204,6 @@ size_t FeatureMap<dtype>::InitFromH5GroupChunked(
     std::vector<int> corners(corner_dataset.getElementCount());
     corner_dataset.read(corners.data());
 
-    std::array<int, 3> patch_shape = {static_cast<int>(shape[1]),
-                                      static_cast<int>(shape[2]),
-                                      static_cast<int>(shape[3])};
-
     THROW_CHECK_EQ(corners.size(), scales.size());
     for (const colmap::point2D_t& point2D_idx : missing_p2D_ids) {
       // If element was found
@@ -231,16 +239,30 @@ size_t FeatureMap<dtype>::LoadFromH5GroupChunked(
       required_p2D_ids = *point2D_ids;
     }
 
-    for (colmap::point2D_t& point2D_idx : required_p2D_ids) {
-      size_t idx = p2D_idx_to_h5id_[point2D_idx];
-      HighFive::Selection chunk = patches_dataset.select(
-          {idx, 0, 0, 0}, {1, shape[1], shape[2], shape[3]});
+    bool read_as_stored = (shape[0] == patches_.size());
 
+    for (colmap::point2D_t& point2D_idx : required_p2D_ids) {
       colmap::point2D_t patch_id = is_sparse_ ? point2D_idx : kDensePatchId;
+      std::vector<size_t> origin(4, 0);
+      std::vector<size_t> offset(4, 0);
+      if (read_as_stored) {
+        origin = {p2D_idx_to_h5id_[point2D_idx], 0, 0, 0};
+        offset = {1, shape[1], shape[2], shape[3]};
+      } else {
+        const std::array<int, 3>& ps = patches_[patch_id].Shape();
+        const Eigen::Vector2i& corner = patches_[patch_id].Corner();
+        origin[1] = static_cast<size_t>(corner(1));
+        origin[2] = static_cast<size_t>(corner(0));
+        offset[0] = 1;
+        offset[1] = static_cast<size_t>(ps[0]);
+        offset[2] = static_cast<size_t>(ps[1]);
+        offset[3] = static_cast<size_t>(shape[3]);
+      }
+
+      HighFive::Selection chunk = patches_dataset.select(origin, offset);
       num_bytes += patches_[patch_id].LoadDataFromH5Chunk(chunk, fill);
     }
   }
-
   return num_bytes;
 }
 
@@ -318,5 +340,5 @@ size_t FeatureMap<dtype>::NumBytes() const {
 
 template class FeatureMap<double>;
 template class FeatureMap<float>;
-template class FeatureMap<float16>;
+template class FeatureMap<half>;
 }  // namespace pixsfm

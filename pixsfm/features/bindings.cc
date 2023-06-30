@@ -19,15 +19,15 @@ namespace py = pybind11;
 
 #include "base/src/graph.h"
 
-PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<float16>);
+PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<half>);
 PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<float>);
 PYBIND11_MAKE_OPAQUE(pixsfm::VecFSet<double>);
 
-PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<float16>);
+PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<half>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<float>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapStringFMap<double>);
 
-PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<float16>);
+PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<half>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<float>);
 PYBIND11_MAKE_OPAQUE(pixsfm::MapIdFPatch<double>);
 
@@ -47,7 +47,9 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
   py::class_<FPatch>(m, ("FeaturePatch" + type_suffix).c_str())
       .def(py::init<py::array_t<dtype, py::array::c_style>, Eigen::Vector2i&,
                     Eigen::Vector2d&, bool>(),
-           py::arg("inarray").noconvert(), py::arg("offset"), py::arg("scale"),
+           py::arg("inarray").noconvert(),
+           py::arg("offset") = Eigen::VectorXi::Zero(2),
+           py::arg("scale") = Eigen::VectorXd::Ones(2),
            py::arg("do_copy") = false)
       .def_property_readonly("data", &FPatch::AsNumpyArray)
       .def_property_readonly("shape", &FPatch::Shape)
@@ -62,6 +64,8 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
       .def("has_data", &FPatch::HasData)
       .def("data_ptr", overload_cast_<>()(&FPatch::Data))
       .def("get_pixel_coords", &FPatch::GetPixelCoordinatesVec)
+      .def("slice", &FPatch::Slice)
+      .def("to_corner", &FPatch::ToCorner)
       .def("lock", &FPatch::Lock)
       .def("flush", &FPatch::Flush)
       .def_property_readonly("status", &FPatch::Status)
@@ -77,7 +81,9 @@ void BindFeatureTemplate(py::module& m, std::string type_suffix) {
       [](py::array_t<dtype, py::array::c_style> inarray,
          Eigen::Vector2i& offset, Eigen::Vector2d& scale,
          bool do_copy) { return FPatch(inarray, offset, scale, do_copy); },
-      py::arg("inarray").noconvert(), py::arg("offset"), py::arg("scale"),
+      py::arg("inarray").noconvert(),
+      py::arg("offset") = Eigen::VectorXi::Zero(2),
+      py::arg("scale") = Eigen::VectorXd::Ones(2),
       py::arg("do_copy") = false);
 
   // FeatureMap
@@ -255,29 +261,31 @@ void bind_features(py::module& m) {
       .def_readwrite("is_locked", &PatchStatus::is_locked)
       .def_readwrite("reference_count", &PatchStatus::reference_count);
 
-  py::class_<Reference>(m, "Reference")
-      .def_readwrite("source", &Reference::source)
-      .def_property_readonly("descriptor", &Reference::NpArray)
-      .def_property_readonly("channels", &Reference::Channels)
-      .def_property_readonly("n_nodes", &Reference::NumNodes)
-      .def_readwrite("track", &Reference::track)
-      .def_readwrite("observations", &Reference::observations)
-      .def_readwrite("costs", &Reference::costs)
-      .def("has_observations", &Reference::HasObservations);
+  auto ref = py::class_<Reference>(m, "Reference")
+                 .def(py::init<>())
+                 .def_readwrite("source", &Reference::source)
+                 .def_property("descriptor", &Reference::NpArray, &Reference::SetNpArray)
+                 .def_property_readonly("channels", &Reference::Channels)
+                 .def_property_readonly("n_nodes", &Reference::NumNodes)
+                 .def_readwrite("track", &Reference::track)
+                 .def_readwrite("observations", &Reference::observations)
+                 .def_readwrite("costs", &Reference::costs)
+                 .def("has_observations", &Reference::HasObservations);
+  make_dataclass(ref);
 
   py::class_<DynamicPatchInterpolator>(m, "PatchInterpolator")
       .def(py::init<const InterpolationConfig&>())
-      .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, float16>)
+      .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, half>)
       .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, float>)
       .def("interpolate", &DynamicPatchInterpolator::Interpolate<-1, double>)
       .def("interpolate_nodes",
-           &DynamicPatchInterpolator::InterpolateNodes<-1, -1, float16>)
+           &DynamicPatchInterpolator::InterpolateNodes<-1, -1, half>)
       .def("interpolate_nodes",
            &DynamicPatchInterpolator::InterpolateNodes<-1, -1, float>)
       .def("interpolate_nodes",
            &DynamicPatchInterpolator::InterpolateNodes<-1, -1, double>)
       .def("interpolate_local",
-           &DynamicPatchInterpolator::InterpolateLocal<-1, float16>)
+           &DynamicPatchInterpolator::InterpolateLocal<-1, half>)
       .def("interpolate_local",
            &DynamicPatchInterpolator::InterpolateLocal<-1, float>)
       .def("interpolate_local",
@@ -286,7 +294,7 @@ void bind_features(py::module& m) {
   py::bind_map<std::unordered_map<colmap::point3D_t, Reference>>(
       m, "Map_IdReference");
 
-  BindFeatureTemplate<float16>(m, "_f16");
+  BindFeatureTemplate<half>(m, "_f16");
   BindFeatureTemplate<double>(m, "_f64");
   BindFeatureTemplate<float>(m, "_f32");
 }

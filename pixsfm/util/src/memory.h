@@ -56,7 +56,11 @@ inline long long NumNonZerosJacobian(const ceres::Problem* problem) {
     int num_active_params = 0;
     for (double* param_block : parameter_blocks) {
       if (!problem->IsParameterBlockConstant(param_block)) {
+#if (CERES_VERSION_MAJOR * 100 + CERES_VERSION_MINOR) >= 201  // >=v2.1
+        num_active_params += problem->ParameterBlockTangentSize(param_block);
+#else
         num_active_params += problem->ParameterBlockLocalSize(param_block);
+#endif
       }
     }
     num_nonzeros += num_active_params * num_residuals;

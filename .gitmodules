@@ -1,7 +1,7 @@
-[submodule "third-party/HighFive"]
-	path = third-party/HighFive
-	url = https://github.com/Phil26AT/HighFive.git
 [submodule "third-party/pybind11"]
 	path = third-party/pybind11
 	url = https://github.com/pybind/pybind11.git
 	branch = v2.8
+[submodule "third-party/HighFive"]
+	path = third-party/HighFive
+	url = https://github.com/BlueBrain/HighFive.git

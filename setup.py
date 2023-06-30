@@ -111,7 +111,7 @@ with open(str(root / 'requirements.txt'), 'r') as f:
 
 setup(
     name='pixsfm',
-    version='0.0.1',
+    version='1.0.0',
     author='Philipp Lindenberger, Paul-Edouard Sarlin',
     author_email='phil.lindenberger@gmail.com',
     description='Pixel-Perfect Structure-from-Motion',

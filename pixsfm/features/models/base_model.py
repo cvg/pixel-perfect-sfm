@@ -7,9 +7,12 @@ from omegaconf import OmegaConf
 import PIL
 import torchvision.transforms.functional as tvf
 
+from ... import logger
+
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
     default_conf = {
+        "name": "???"
     }
     output_dims = None  # num channels for each returned featuremap
     scales = None  # downscaling for each returned featuremap w.r.t input image
@@ -17,9 +20,13 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
     def __init__(self, conf):
         """Perform some logic and call the _init method of the child model."""
         super().__init__()
-        self.conf = conf = OmegaConf.merge(self.default_conf, conf)
+        default_conf = OmegaConf.merge(BaseModel.default_conf,
+                                       self.default_conf)
+        OmegaConf.set_struct(default_conf, True)  # Disallow additional values
+        self.conf = conf = OmegaConf.merge(default_conf, conf)
         OmegaConf.set_readonly(conf, True)
         OmegaConf.set_struct(conf, True)
+        self.device = torch.device('cpu')
 
         self._init(conf)
         assert(self.output_dims is not None)
@@ -54,3 +61,16 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
             return tens.to(dtype=torch.get_default_dtype()).div(255)
         else:
             return tens
+
+    def to(self, *args, **kwargs):
+        device = kwargs.get('device')
+        if device is None:
+            match = [a for a in args if isinstance(a, (torch.device, str))]
+            if len(match) > 0:
+                device = match[0]
+        if device is not None:
+            device = torch.device(device)
+            if self.device != device:
+                logger.debug(f'Transfer model from {self.device} to {device}')
+            self.device = device
+        return super().to(*args, **kwargs)

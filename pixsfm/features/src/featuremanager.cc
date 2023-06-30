@@ -81,6 +81,6 @@ size_t FeatureManager<dtype>::NumBytes() const {
 
 template class FeatureManager<double>;
 template class FeatureManager<float>;
-template class FeatureManager<float16>;
+template class FeatureManager<half>;
 
 }  // namespace pixsfm

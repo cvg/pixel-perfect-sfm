@@ -10,18 +10,19 @@ namespace py = pybind11;
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 
+#include <Eigen/Dense>
+
 #include <ceres/ceres.h>
 #include <colmap/base/projection.h>
 #include <colmap/util/timer.h>
 #include <colmap/util/types.h>
 
-#include "features/src/dynamic_patch_interpolator.h"
 #include "features/src/featuremap.h"
 #include "features/src/featurepatch.h"
 #include "features/src/featureset.h"
 #include "features/src/featureview.h"
-#include "features/src/patch_interpolator.h"
 #include "features/src/references.h"
+#include "features/src/dynamic_patch_interpolator.h"
 
 #include "base/src/interpolation.h"
 #include "base/src/irls_optim.h"
@@ -327,7 +328,7 @@ ReferenceExtractor::InitReferences(const std::vector<int>& problem_labels) {
   return references;
 }
 
-//template <int N_NODES = Eigen::Dynamic>
+
 template <int N_NODES>
 OffsetMatrix3d<N_NODES> NodeOffsets3D(
     const colmap::Image& image, const colmap::Camera& camera,
