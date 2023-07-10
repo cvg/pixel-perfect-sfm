@@ -123,7 +123,7 @@ class Interpolator {
 
   template <typename JetT>
   void Evaluate(const JetT& r, const JetT& c, JetT* f) const {
-   double frc[Grid::DATA_DIMENSION];
+    double frc[Grid::DATA_DIMENSION];
     double dfdr[Grid::DATA_DIMENSION];
     double dfdc[Grid::DATA_DIMENSION];
     Evaluate(r.a, c.a, frc, dfdr, dfdc);
