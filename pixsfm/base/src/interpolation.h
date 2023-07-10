@@ -740,4 +740,4 @@ class PixelInterpolator : public Interpolator<Grid> {
   std::unique_ptr<Interpolator<Grid>> interpolator_;
 };
 
-}  // namespace pixsfm 
+}  // namespace pixsfm
