@@ -121,9 +121,8 @@ class Interpolator {
     return Evaluate(r, c, f, dfdr, dfdc);
   }
 
-
   template <typename JetT>
-   void Evaluate(const JetT& r, const JetT& c, JetT* f) const {
+  void Evaluate(const JetT& r, const JetT& c, JetT* f) const {
    double frc[Grid::DATA_DIMENSION];
     double dfdr[Grid::DATA_DIMENSION];
     double dfdc[Grid::DATA_DIMENSION];
@@ -614,7 +613,7 @@ class NearestNeighborInterpolator : public Interpolator<Grid> {
 
 template <typename Grid>
 class PixelInterpolator : public Interpolator<Grid> {
-//  template <typename JetT> using Interpolator<Grid>::Evaluate<JetT>;
+  // template <typename JetT> using Interpolator<Grid>::Evaluate<JetT>;
   using Interpolator<Grid>::grid_;
 
  public:
@@ -741,4 +740,4 @@ class PixelInterpolator : public Interpolator<Grid> {
   std::unique_ptr<Interpolator<Grid>> interpolator_;
 };
 
-}  // namespace pixsfm
+}  // namespace pixsfm 

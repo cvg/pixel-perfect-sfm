@@ -1,4 +1,4 @@
-## cmake version to be used
+# cmake version to be used
 cmake_minimum_required( VERSION 3.0 )
 
 # project name
@@ -10,7 +10,6 @@ project(PIXSFM)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fPIC")
 
-include(FindPythonPyEnv)
 # Include helper macros and commands, and allow the included file to override
 # the CMake policies in this file
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeHelper.cmake NO_POLICY_SCOPE)
@@ -19,7 +18,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeHelper.cmake NO_POLICY_SCOPE)
 # Options
 ################################################################################
 option(TESTS_ENABLED "Whether to build test binaries" ON)
-option(AVX2_ENABLED "Whether to compile with AVX2 support" OFF)
+option(AVX2_ENABLED "Whether to compile with AVX2 support" ON)
 
 if(TESTS_ENABLED)
     enable_testing()
