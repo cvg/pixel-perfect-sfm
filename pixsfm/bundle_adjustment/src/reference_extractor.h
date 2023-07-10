@@ -328,7 +328,6 @@ ReferenceExtractor::InitReferences(const std::vector<int>& problem_labels) {
   return references;
 }
 
-
 template <int N_NODES>
 OffsetMatrix3d<N_NODES> NodeOffsets3D(
     const colmap::Image& image, const colmap::Camera& camera,
