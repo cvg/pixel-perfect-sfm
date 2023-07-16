@@ -1,5 +1,5 @@
-git+https://github.com/colmap/pycolmap
-git+https://github.com/cvg/pyceres
+git+https://github.com/colmap/pycolmap.git@v0.4.0
+git+https://github.com/cvg/pyceres@v1.0
 torch>=1.7
 torchvision>=0.8
 numpy
