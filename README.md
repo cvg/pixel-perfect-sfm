@@ -1,4 +1,4 @@
-# Pixel-Perfect Structure-from-Motion
+x# Pixel-Perfect Structure-from-Motion
 
 ### Best student paper award @ [ICCV 2021](http://iccv2021.thecvf.com/)
 
@@ -31,10 +31,10 @@ With `pixsfm`, you can:
 
 ## Installation
 
-`pixsfm` requires Python >=3.6, GCC >=6.1, and COLMAP [installed from source](https://colmap.github.io/install.html#build-from-source) at commit [colmap/colmap@`d812bcb`](https://github.com/colmap/colmap/commit/d812bcbf5a9a13c52292b711a5c1d4a55dfe5812). The core optimization is implemented in C++ with [Ceres >= 2.1](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) + [pyceres](https://github.com/cvg/pyceres) built from source:
+`pixsfm` requires Python >=3.6, GCC >=6.1, and COLMAP 3.8 [installed from source](https://colmap.github.io/install.html#build-from-source). The core optimization is implemented in C++ with [Ceres >= 2.1](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) + [pyceres](https://github.com/cvg/pyceres) built from source:
 
 ```bash
-# install COLMAP following colmap.github.io/install.html#build-from-source, commit d812bcb
+# install COLMAP following colmap.github.io/install.html#build-from-source, tag 3.8
 sudo apt-get install libhdf5-dev
 git clone https://github.com/cvg/pixel-perfect-sfm --recursive
 cd pixel-perfect-sfm
