@@ -63,7 +63,7 @@ class FeatureExtractor:
 
     filters = {
         n: getattr(PIL.Image, n)
-        for n in ["BILINEAR", "BICUBIC", "ANTIALIAS", "LANCZOS"]
+        for n in ["BILINEAR", "BICUBIC", "LANCZOS"]
     }
 
     def __init__(self, conf: DictConfig, model: BaseModel = None):
