@@ -1,4 +1,4 @@
-x# Pixel-Perfect Structure-from-Motion
+# Pixel-Perfect Structure-from-Motion
 
 ### Best student paper award @ [ICCV 2021](http://iccv2021.thecvf.com/)
 
