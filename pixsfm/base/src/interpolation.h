@@ -18,6 +18,7 @@ namespace py = pybind11;
 #include <string>
 #include <utility>
 #include <vector>
+#include <type_traits>
 
 #include "base/src/cubic_hermite_spline_simd.h"
 
@@ -115,13 +116,6 @@ class Interpolator {
     }
   }
 
-  // The following two Evaluate overloads are needed for interfacing
-  // with automatic differentiation. The first is for when a scalar
-  // evaluation is done, and the second one is for when Jets are used.
-  void Evaluate(const double& r, const double& c, double* f) const {
-    return Evaluate(r, c, f, NULL, NULL);
-  }
-
   void IEvaluate(double r, double c, double* f, double* dfdr,
                  double* dfdc) const {
     return Evaluate(r, c, f, dfdr, dfdc);
@@ -138,6 +132,17 @@ class Interpolator {
       f[i].v = dfdr[i] * r.v + dfdc[i] * c.v;
     }
   }
+
+
+    // The following two Evaluate overloads are needed for interfacing
+    // with automatic differentiation. The first is for when a scalar
+    // evaluation is done, and the second one is for when Jets are used.
+    template <>
+    void Evaluate(const double& r, const double& c, double* f) const {
+      return Evaluate(r, c, f, NULL, NULL);
+      //Without template specialization it does not work with Clang
+    }
+
 
   virtual int OutputDimension() const { return Grid::DATA_DIMENSION; }
 
