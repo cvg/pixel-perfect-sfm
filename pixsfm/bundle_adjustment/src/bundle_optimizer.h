@@ -2,13 +2,12 @@
 
 #include <ceres/ceres.h>
 
-#include <colmap/base/camera_models.h>
+#include <colmap/camera/models.h>
 #include <colmap/base/camera_rig.h>
 #include <colmap/base/cost_functions.h>
 #include <colmap/base/projection.h>
 #include <colmap/base/reconstruction.h>
 #include <colmap/optim/bundle_adjustment.h>
-#include <colmap/util/alignment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 #include <colmap/util/threading.h>
