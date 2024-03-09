@@ -11,7 +11,7 @@ namespace py = pybind11;
 #include <highfive/H5Group.hpp>
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
+#include <colmap/scene/projection.h>
 #include <colmap/util/types.h>
 
 #include "base/src/interpolation.h"

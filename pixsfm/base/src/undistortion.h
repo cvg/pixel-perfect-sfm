@@ -1,9 +1,9 @@
 #pragma once
 
-#include <colmap/base/camera_models.h>
-#include <colmap/base/image.h>
-#include <colmap/base/projection.h>
-#include <colmap/util/math.h>
+#include <colmap/sensor/models.h>
+#include <colmap/scene/image.h>
+#include <colmap/scene/projection.h>
+#include <colmap/math/math.h>
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>

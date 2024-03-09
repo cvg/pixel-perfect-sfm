@@ -1,8 +1,8 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
-#include <colmap/base/reconstruction.h>
+#include <colmap/scene/projection.h>
+#include <colmap/scene/reconstruction.h>
 #include <colmap/util/types.h>
 
 #include "features/src/featurepatch.h"

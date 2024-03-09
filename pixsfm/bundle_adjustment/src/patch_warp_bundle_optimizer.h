@@ -115,7 +115,7 @@ int PatchWarpBundleOptimizer::AddResiduals(
 
   double* qvec_data = image.Qvec().data();
   double* tvec_data = image.Tvec().data();
-  double* camera_params_data = camera.ParamsData();
+  double* camera_params_data = camera.params.data();
   double* xyz = point3D.XYZ().data();
 
   ceres::ResidualBlockId block_id;
@@ -128,14 +128,14 @@ int PatchWarpBundleOptimizer::AddResiduals(
 
   double* src_qvec_data = src_image.Qvec().data();
   double* src_tvec_data = src_image.Tvec().data();
-  double* src_camera_params_data = src_camera.ParamsData();
+  double* src_camera_params_data = src_camera.params.data();
 
   if (src_image_id == image_id) {
     // INTERNAL FUNCTION //
     if (src_point2D_idx == point2D_idx && options_.regularize_source) {
       ceres::CostFunction* cost_function =
           CreateFeatureReferenceCostFunctor<CHANNELS, N_NODES, -1>(
-              camera.ModelId(),
+              camera.model_id,
               feature_view.GetFeaturePatch(image_id, src_point2D_idx),
               references.at(point3D_id).DescriptorData(),
               references.at(point3D_id).NodeOffsets3DData(),
@@ -156,7 +156,7 @@ int PatchWarpBundleOptimizer::AddResiduals(
       // Shared intrinsics
       ceres::CostFunction* cost_function =
           CreateFeatureMetricSharedIntrinsicsCostFunctor<CHANNELS, N_NODES>(
-              camera.ModelId(),
+              camera.model_id,
               feature_view.GetFeaturePatch(image_id, point2D_idx),
               feature_view.GetFeaturePatch(src_image_id, src_point2D_idx),
               interpolation_config_);
@@ -166,9 +166,9 @@ int PatchWarpBundleOptimizer::AddResiduals(
     } else {
       ceres::CostFunction* cost_function =
           CreateFeatureMetricCostFunctor<CHANNELS, N_NODES>(
-              camera.ModelId(),
+              camera.model_id,
               feature_view.GetFeaturePatch(image_id, point2D_idx),
-              src_camera.ModelId(),
+              src_camera.model_id,
               feature_view.GetFeaturePatch(src_image_id, src_point2D_idx),
               interpolation_config_);
       block_id = problem_->AddResidualBlock(

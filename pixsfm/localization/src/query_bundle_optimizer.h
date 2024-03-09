@@ -8,9 +8,9 @@
 namespace py = pybind11;
 
 #include <ceres/ceres.h>
-#include <colmap/base/reconstruction.h>
-#include <colmap/base/cost_functions.h>
-#include <colmap/optim/bundle_adjustment.h>
+#include <colmap/scene/reconstruction.h>
+#include <colmap/estimators/cost_functions.h>
+#include <colmap/estimators/bundle_adjustment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 #include <colmap/util/threading.h>
@@ -122,7 +122,7 @@ void QueryBundleOptimizer::ParameterizeQuery(ceres::Problem* problem,
                                !options_.refine_principal_point &&
                                !options_.refine_extra_params;
   if (constant_camera) {
-    problem->SetParameterBlockConstant(camera.ParamsData());
+    problem->SetParameterBlockConstant(camera.params.data());
   } else {
     std::vector<int> const_camera_params;
     if (!options_.refine_focal_length) {
@@ -142,9 +142,9 @@ void QueryBundleOptimizer::ParameterizeQuery(ceres::Problem* problem,
     }
 
     if (const_camera_params.size() > 0) {
-      colmap::SetSubsetManifold(static_cast<int>(camera.NumParams()),
+      colmap::SetSubsetManifold(static_cast<int>(colmap::CameraModelNumParams(camera.model_id)),
                                 const_camera_params, problem,
-                                camera.ParamsData());
+                                camera.params.data());
     }
   }
 }

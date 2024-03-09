@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
+#include <colmap/scene/projection.h>
 #include <colmap/util/types.h>
 
 #include "features/src/featuremap.h"
@@ -192,7 +192,7 @@ double CostMapExtractor::RunSubset(
   for (colmap::point3D_t point3D_id : point3D_ids) {
     Reference& reference = references.at(point3D_id);
     auto& point3D = reconstruction.Point3D(point3D_id);
-    for (auto& track_el : point3D.Track().Elements()) {
+    for (auto& track_el : point3D.track.Elements()) {
       colmap::image_t image_id = track_el.image_id;
       colmap::point2D_t point2D_idx = track_el.point2D_idx;
       FeatureMap<dtype>& fmap = fview.GetFeatureMap(image_id);
@@ -212,7 +212,7 @@ double CostMapExtractor::RunSubset(
         const colmap::Image& image = reconstruction.Image(image_id);
         const colmap::Point2D& p2D = image.Point2D(point2D_idx);
         Eigen::Vector2d xy = ProjectPointToImage(
-            reconstruction.Point3D(p2D.Point3DId()).XYZ(),
+            reconstruction.Point3D(p2D.point3D_id).xyz,
             image.ProjectionMatrix(),
             reconstruction.Camera(image.CameraId())
           );
@@ -412,7 +412,7 @@ FeatureSet<dtype_o> CostMapExtractor::CreateShallowCostmapFSet(
         const colmap::Point2D& p2D = image.Point2D(p2D_idx);
         if (p2D.HasPoint3D()) {
           Eigen::Vector2d xy = ProjectPointToImage(
-            reconstruction.Point3D(p2D.Point3DId()).XYZ(),
+            reconstruction.Point3D(p2D.point3D_id).xyz,
             image.ProjectionMatrix(),
             reconstruction.Camera(image.CameraId())
           );
