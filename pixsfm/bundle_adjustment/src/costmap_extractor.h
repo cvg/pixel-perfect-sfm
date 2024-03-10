@@ -367,7 +367,7 @@ FeatureSet<dtype_o> CostMapExtractor::CreateShallowCostmapFSet(
   // Get observations which are part of the problem
   std::unordered_map<colmap::image_t, std::vector<colmap::point2D_t>> req_obs;
   for (colmap::point3D_t p3D_id : required_p3D_ids) {
-    const colmap::Track& track = reconstruction.Point3D(p3D_id).Track();
+    const colmap::Track& track = reconstruction.Point3D(p3D_id).track;
     for (const colmap::TrackElement& track_el : track.Elements()) {
       req_obs[track_el.image_id].push_back(track_el.point2D_idx);
     }

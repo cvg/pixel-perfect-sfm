@@ -31,7 +31,7 @@
 // Edited by: Philipp Lindenberger
 
 #define TEST_NAME "bundle_adjustment/bundle_optimizer"
-#include <colmap/util/testing.h>
+#include <gtest/gtest.h>
 
 #include <colmap/estimators/bundle_adjustment.h>
 #include <colmap/sensor/models.h>
@@ -51,9 +51,9 @@
 // a rather big tolerance
 #define TOL 1.0e-4
 
-#define BOOST_CHECK_ALL_CLOSE(vec1, vec2)             \
+#define CHECK_ALL_CLOSE(vec1, vec2)             \
   for (int i = 0; i < vec1.size(); i++) {             \
-    BOOST_CHECK_LT(std::abs(vec1[i] - vec2[i]), TOL); \
+    CHECK_NEAR(vec1[i], vec2[i], TOL);                \
   }
 
 namespace colmap {
@@ -63,9 +63,9 @@ void GeneratePointCloud(const size_t num_points, const Eigen::Vector3d& min,
                         Reconstruction* reconstruction) {
   for (size_t i = 0; i < num_points; ++i) {
     Eigen::Vector3d xyz;
-    xyz.x() = RandomReal(min.x(), max.x());
-    xyz.y() = RandomReal(min.y(), max.y());
-    xyz.z() = RandomReal(min.z(), max.z());
+    xyz.x() = RandomUniformReal(min.x(), max.x());
+    xyz.y() = RandomUniformReal(min.y(), max.y());
+    xyz.z() = RandomUniformReal(min.z(), max.z());
     reconstruction->AddPoint3D(xyz, Track());
   }
 }
@@ -98,7 +98,7 @@ void GenerateReconstruction(const size_t num_images, const size_t num_points,
     image.SetName(std::to_string(i));
     image.Qvec() = ComposeIdentityQuaternion();
     image.Tvec() =
-        Eigen::Vector3d(RandomReal(-1.0, 1.0), RandomReal(-1.0, 1.0), 10);
+        Eigen::Vector3d(RandomUniformReal(-1.0, 1.0), RandomUniformReal(-1.0, 1.0), 10);
     image.SetRegistered(true);
     reconstruction->AddImage(image);
 
@@ -106,12 +106,12 @@ void GenerateReconstruction(const size_t num_images, const size_t num_points,
 
     std::vector<Eigen::Vector2d> points2D;
     for (const auto& point3D : reconstruction->Points3D()) {
-      BOOST_CHECK(HasPointPositiveDepth(proj_matrix, point3D.second.xyz));
+      EXPECT_TRUE(HasPointPositiveDepth(proj_matrix, point3D.second.xyz));
       // Get exact projection of 3D point.
       Eigen::Vector2d point2D =
            ProjectPointToImage(point3D.second.xyz, proj_matrix, camera);
       // Add some uniform noise.
-      point2D += Eigen::Vector2d(RandomReal(-2.0, 2.0), RandomReal(-2.0, 2.0));
+      point2D += Eigen::Vector2d(RandomUniformReal(-2.0, 2.0), RandomUniformReal(-2.0, 2.0));
       points2D.push_back(point2D);
     }
 
@@ -143,20 +143,20 @@ void CompareReconstructions(colmap::Reconstruction* reconstruction1,
   for (auto& image_pair : reconstruction1->Images()) {
     auto& image1 = image_pair.second;
     auto& image2 = reconstruction2->Image(image_pair.first);
-    BOOST_CHECK_ALL_CLOSE(image1.Qvec(), image2.Qvec());
-    BOOST_CHECK_ALL_CLOSE(image1.Tvec(), image2.Tvec());
+    CHECK_ALL_CLOSE(image1.Qvec(), image2.Qvec());
+    CHECK_ALL_CLOSE(image1.Tvec(), image2.Tvec());
   }
 
   for (auto& camera_pair : reconstruction1->Cameras()) {
     auto& camera1 = camera_pair.second;
     auto& camera2 = reconstruction2->Camera(camera_pair.first);
-    BOOST_CHECK_ALL_CLOSE(camera1.params, camera2.params);
+    CHECK_ALL_CLOSE(camera1.params, camera2.params);
   }
 
   for (auto& point_pair : reconstruction1->Points3D()) {
     auto& point3D1 = point_pair.second;
     auto& point3D2 = reconstruction2->Point3D(point_pair.first);
-    BOOST_CHECK_ALL_CLOSE(point3D1.xyz, point3D2.xyz);
+    CHECK_ALL_CLOSE(point3D1.xyz, point3D2.xyz);
   }
 }
 
@@ -179,14 +179,14 @@ void TestBA(colmap::Reconstruction& reconstruction,
   options.print_summary = false;
   colmap_options.print_summary = false;
   colmap::BundleAdjuster bundle_adjuster(colmap_options, config);
-  BOOST_REQUIRE(bundle_adjuster.Solve(&reconstruction));
+  ASSERT_TRUE(bundle_adjuster.Solve(&reconstruction));
   const auto summary = bundle_adjuster.Summary();
 
   GeometricBundleOptimizer geom_bundle_adjuster(options, setup);
-  BOOST_REQUIRE(geom_bundle_adjuster.Run(&reconstruction2));
+  ASSERT_TRUE(geom_bundle_adjuster.Run(&reconstruction2));
   CompareReconstructions(&reconstruction, &reconstruction2);
 }
-BOOST_AUTO_TEST_CASE(TestTwoView) {
+TEST(TwoView, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(TestTwoView) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestTwoViewConstantCamera) {
+TEST(TwoViewConstantCamera, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -219,13 +219,13 @@ BOOST_AUTO_TEST_CASE(TestTwoViewConstantCamera) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestPartiallyContainedTracks) {
+TEST(PartiallyContainedTracks, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(3, 100, &reconstruction,
                                  &correspondence_graph);
   const auto variable_point3D_id =
-      reconstruction.Image(2).Point2D(0).Point3DId();
+      reconstruction.Image(2).Point2D(0).point3D_id;
   reconstruction.DeleteObservation(2, 0);
 
   colmap::BundleAdjustmentConfig config;
@@ -238,17 +238,17 @@ BOOST_AUTO_TEST_CASE(TestPartiallyContainedTracks) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestPartiallyContainedTracksForceToOptimizePoint) {
+TEST(PartiallyContainedTracksForceToOptimizePoint, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(3, 100, &reconstruction,
                                  &correspondence_graph);
   const colmap::point3D_t variable_point3D_id =
-      reconstruction.Image(2).Point2D(0).Point3DId();
+      reconstruction.Image(2).Point2D(0).point3D_id;
   const colmap::point3D_t add_variable_point3D_id =
-      reconstruction.Image(2).Point2D(1).Point3DId();
+      reconstruction.Image(2).Point2D(1).point3D_id;
   const colmap::point3D_t add_constant_point3D_id =
-      reconstruction.Image(2).Point2D(2).Point3DId();
+      reconstruction.Image(2).Point2D(2).point3D_id;
   reconstruction.DeleteObservation(2, 0);
 
   colmap::BundleAdjustmentConfig config;
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(TestPartiallyContainedTracksForceToOptimizePoint) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestConstantPoints) {
+TEST(ConstantPoints, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE(TestConstantPoints) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestVariableImage) {
+TEST(VariableImage, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(3, 100, &reconstruction,
@@ -301,7 +301,7 @@ BOOST_AUTO_TEST_CASE(TestVariableImage) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestConstantFocalLength) {
+TEST(ConstantFocalLength, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(TestConstantFocalLength) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestVariablePrincipalPoint) {
+TEST(VariablePrincipalPoint, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(TestVariablePrincipalPoint) {
   TestBA(reconstruction, options, config);
 }
 
-BOOST_AUTO_TEST_CASE(TestConstantExtraParam) {
+TEST(ConstantExtraParam, Nominal) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,

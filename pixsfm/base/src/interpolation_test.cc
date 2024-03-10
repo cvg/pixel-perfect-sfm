@@ -1,5 +1,5 @@
 #define TEST_NAME "base/interpolation"
-#include <colmap/util/testing.h>
+#include <gtest/gtest.h>
 
 #include <ceres/ceres.h>
 
@@ -90,7 +90,7 @@ class TestInterpolation2D {
   std::unique_ptr<double[]> values_;
 };
 
-BOOST_AUTO_TEST_CASE(TestZeroFunction) {
+TEST(ZeroFunction) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   InterpolationConfig configs[2];
   configs[0].mode = InterpolatorType::BICUBIC;
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(TestZeroFunction) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestDegree00Function) {
+TEST(Degree00Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   InterpolationConfig configs[3];
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(TestDegree00Function) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestDegree01Function) {
+TEST(Degree01Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   coeff(0, 2) = 0.1;
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(TestDegree01Function) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestDegree10Function) {
+TEST(Degree10Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   coeff(0, 1) = 0.1;
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(TestDegree10Function) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestDegree11Function) {
+TEST(Degree11Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   coeff(0, 1) = 0.1;
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(TestDegree11Function) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestL2Normalize) {
+TEST(L2Normalize) {
   InterpolationConfig interpolation_config;
   interpolation_config.l2_normalize = true;
 
@@ -236,7 +236,7 @@ Eigen::VectorXd compute_std_per_channel(double* data, int channels,
   return std;
 }
 
-BOOST_AUTO_TEST_CASE(TestNCCNormalize) {
+TEST(NCCNormalize) {
   InterpolationConfig interpolation_config;
   interpolation_config.l2_normalize = false;
   interpolation_config.ncc_normalize = true;
@@ -302,15 +302,15 @@ void TestInterpolationJetEvaluation(InterpolationConfig interpolation_config) {
 
   ceres::Jet<double, 4> f_jets[2];
   interpolator.Evaluate(r_jet, c_jet, f_jets);
-  BOOST_CHECK_EQUAL(f_jets[0].a, f[0]);
-  BOOST_CHECK_EQUAL(f_jets[1].a, f[1]);
+  EXPECT_EQ(f_jets[0].a, f[0]);
+  EXPECT_EQ(f_jets[1].a, f[1]);
   BOOST_CHECK_LT((f_jets[0].v - dfdr[0] * r_jet.v - dfdc[0] * c_jet.v).norm(),
                  1.0e-10);
   BOOST_CHECK_LT((f_jets[1].v - dfdr[1] * r_jet.v - dfdc[1] * c_jet.v).norm(),
                  1.0e-10);
 }
 
-BOOST_AUTO_TEST_CASE(TestBiCubicInterpolation) {
+TEST(BiCubicInterpolation) {
   InterpolationConfig interpolation_config;
   interpolation_config.mode = InterpolatorType::BILINEAR;
   interpolation_config.l2_normalize = false;
@@ -357,7 +357,7 @@ void TestSimilarToCeres() {
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestBiCubicSimilarCeres) {
+TEST(BiCubicSimilarCeres) {
   TestSimilarToCeres<float, 128>();
   TestSimilarToCeres<double, 128>();
   TestSimilarToCeres<half, 128>();

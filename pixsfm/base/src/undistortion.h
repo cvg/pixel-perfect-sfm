@@ -66,13 +66,13 @@ inline void CeresIterativeUndistortion(const T* params, T* u, T* v) {
 template <typename CameraModel>
 struct UndistortionAutodiffModel {
   template <typename T>
-  static inline void ImageToWorld(const T* params, const T x, const T y, T* u,
+  static inline void ImageToCam(const T* params, const T x, const T y, T* u,
                                   T* v);
 };
 
 template <>
 template <typename T>
-void UndistortionAutodiffModel<colmap::SimplePinholeCameraModel>::ImageToWorld(
+void UndistortionAutodiffModel<colmap::SimplePinholeCameraModel>::ImageToCam(
     const T* params, const T x, const T y, T* u, T* v) {
   const T f = params[0];
   const T c1 = params[1];
@@ -84,7 +84,7 @@ void UndistortionAutodiffModel<colmap::SimplePinholeCameraModel>::ImageToWorld(
 
 template <>
 template <typename T>
-void UndistortionAutodiffModel<colmap::PinholeCameraModel>::ImageToWorld(
+void UndistortionAutodiffModel<colmap::PinholeCameraModel>::ImageToCam(
     const T* params, const T x, const T y, T* u, T* v) {
   const T f1 = params[0];
   const T f2 = params[1];
@@ -97,7 +97,7 @@ void UndistortionAutodiffModel<colmap::PinholeCameraModel>::ImageToWorld(
 
 template <>
 template <typename T>
-void UndistortionAutodiffModel<colmap::SimpleRadialCameraModel>::ImageToWorld(
+void UndistortionAutodiffModel<colmap::SimpleRadialCameraModel>::ImageToCam(
     const T* params, const T x, const T y, T* u, T* v) {
   const T f = params[0];
   const T c1 = params[1];
@@ -112,7 +112,7 @@ void UndistortionAutodiffModel<colmap::SimpleRadialCameraModel>::ImageToWorld(
 
 template <>
 template <typename T>
-void UndistortionAutodiffModel<colmap::RadialCameraModel>::ImageToWorld(
+void UndistortionAutodiffModel<colmap::RadialCameraModel>::ImageToCam(
     const T* params, const T x, const T y, T* u, T* v) {
   const T f = params[0];
   const T c1 = params[1];
@@ -127,7 +127,7 @@ void UndistortionAutodiffModel<colmap::RadialCameraModel>::ImageToWorld(
 
 template <>
 template <typename T>
-void UndistortionAutodiffModel<colmap::OpenCVCameraModel>::ImageToWorld(
+void UndistortionAutodiffModel<colmap::OpenCVCameraModel>::ImageToCam(
     const T* params, const T x, const T y, T* u, T* v) {
   const T f1 = params[0];
   const T f2 = params[1];

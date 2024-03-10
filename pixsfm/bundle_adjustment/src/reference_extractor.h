@@ -178,7 +178,7 @@ ReferenceExtractor::GetVisibleObservations(
   // Construct visible track
   colmap::Track visible_track;
   std::vector<Eigen::Vector2d> xys;
-  // xys.reserve(point3D.Track().Length());
+  // xys.reserve(point3D.track.Length());
   for (auto& track_el : point3D.track.Elements()) {
     colmap::image_t image_id = track_el.image_id;
     colmap::point2D_t point2D_idx = track_el.point2D_idx;

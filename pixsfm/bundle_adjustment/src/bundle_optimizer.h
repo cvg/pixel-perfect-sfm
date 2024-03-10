@@ -4,9 +4,9 @@
 
 #include <colmap/sensor/models.h>
 #include <colmap/scene/camera_rig.h>
-#include <colmap/estimators/cost_functions.h>
 #include <colmap/scene/projection.h>
 #include <colmap/scene/reconstruction.h>
+#include <colmap/estimators/cost_functions.h>
 #include <colmap/estimators/bundle_adjustment.h>
 #include <colmap/util/eigen_alignment.h>
 #include <colmap/util/logging.h>
@@ -417,17 +417,17 @@ void BundleOptimizer<Derived>::ParameterizeCameras(
       std::vector<int> const_camera_params;
 
       if (!options_.refine_focal_length) {
-        const std::vector<size_t>& params_idxs = camera.FocalLengthIdxs();
+        const colmap::span<const size_t>& params_idxs = camera.FocalLengthIdxs();
         const_camera_params.insert(const_camera_params.end(),
                                    params_idxs.begin(), params_idxs.end());
       }
       if (!options_.refine_principal_point) {
-        const std::vector<size_t>& params_idxs = camera.PrincipalPointIdxs();
+        const colmap::span<const size_t>& params_idxs = camera.PrincipalPointIdxs();
         const_camera_params.insert(const_camera_params.end(),
                                    params_idxs.begin(), params_idxs.end());
       }
       if (!options_.refine_extra_params) {
-        const std::vector<size_t>& params_idxs = camera.ExtraParamsIdxs();
+        const colmap::span<const size_t>& params_idxs = camera.ExtraParamsIdxs();
         const_camera_params.insert(const_camera_params.end(),
                                    params_idxs.begin(), params_idxs.end());
       }

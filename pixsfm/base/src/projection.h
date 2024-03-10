@@ -42,7 +42,7 @@ template <typename CameraModel, typename T>
 void PixelToWorld(const T* camera_params, const T* qvec, const T* tvec,
                   const T x, const T y, const T* depth, T* xyz) {
   T local_xyz[3];
-  UndistortionAutodiffModel<CameraModel>::ImageToWorld(
+  UndistortionAutodiffModel<CameraModel>::ImageToCam(
       camera_params, x, y, &local_xyz[0], &local_xyz[1]);
 
   local_xyz[2] = T(1.0);
@@ -69,9 +69,10 @@ inline void WorldToPixel(const T* camera_params, const T* qvec, const T* tvec,
   // Project to image plane.
   projection[0] /= projection[2];  // u
   projection[1] /= projection[2];  // v
+  projection[2] /= projection[2];  // w
 
-  CameraModel::WorldToImage(camera_params, projection[0], projection[1], &xy[0],
-                            &xy[1]);
+  CameraModel::ImgFromCam(camera_params, projection[0], projection[1], projection[2],
+                            &xy[0], &xy[1]);
 }
 
 inline void WorldToPixel(const colmap::Camera& camera,

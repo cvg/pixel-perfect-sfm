@@ -105,13 +105,13 @@ int FeatureReferenceBundleOptimizer::AddResiduals(
     return 0;
   }
 
-  colmap::point3D_t point3D_id = point2D.Point3DId();
+  colmap::point3D_t point3D_id = point2D.point3D_id;
   colmap::Point3D& point3D = reconstruction->Point3D(point3D_id);
 
   double* qvec_data = image.Qvec().data();
   double* tvec_data = image.Tvec().data();
   double* camera_params_data = camera.params.data();
-  double* xyz = point3D.XYZ().data();
+  double* xyz = point3D.xyz.data();
 
   ceres::ResidualBlockId block_id;
 
