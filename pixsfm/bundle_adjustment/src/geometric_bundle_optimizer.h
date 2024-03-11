@@ -66,7 +66,7 @@ int GeometricBundleOptimizer::AddResiduals<>(
 
   if (constant_pose) {
     ceres::CostFunction* cost_function = CreateGeometricConstantPoseCostFunctor(
-        camera.model_id, image.Qvec(), image.Tvec(), point2D.xy);
+        camera.model_id, image.CamFromWorld(), point2D.xy);
     block_id = problem_->AddResidualBlock(cost_function, loss_function, xyz,
                                           camera_params_data);
   } else {

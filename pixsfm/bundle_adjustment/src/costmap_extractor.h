@@ -211,11 +211,8 @@ double CostMapExtractor::RunSubset(
         // If the featuremap is dense, we slice a smaller patch
         const colmap::Image& image = reconstruction.Image(image_id);
         const colmap::Point2D& p2D = image.Point2D(point2D_idx);
-        Eigen::Vector2d xy = ProjectPointToImage(
-            reconstruction.Point3D(p2D.point3D_id).xyz,
-            image.ProjectionMatrix(),
-            reconstruction.Camera(image.CameraId())
-          );
+          Eigen::Vector2d xy = reconstruction.Camera(image.CameraId()).ImgFromCam(
+                  (image.CamFromWorld() * reconstruction.Point3D(p2D.point3D_id).xyz).hnormalized());
         // Involves a copy
         FeaturePatch<dtype> fpatch = fmap.GetFeaturePatch(kDensePatchId).Slice(
           xy, config_.dense_cut_size);
@@ -411,11 +408,8 @@ FeatureSet<dtype_o> CostMapExtractor::CreateShallowCostmapFSet(
       for (colmap::point2D_t p2D_idx : points_pair.second) {
         const colmap::Point2D& p2D = image.Point2D(p2D_idx);
         if (p2D.HasPoint3D()) {
-          Eigen::Vector2d xy = ProjectPointToImage(
-            reconstruction.Point3D(p2D.point3D_id).xyz,
-            image.ProjectionMatrix(),
-            reconstruction.Camera(image.CameraId())
-          );
+          Eigen::Vector2d xy = reconstruction.Camera(image.CameraId()).ImgFromCam(
+                    (image.CamFromWorld() * reconstruction.Point3D(p2D.point3D_id).xyz).hnormalized());
           // We extract the corner around the reprojected observation
           Eigen::Vector2i corner = dense_patch.ToCorner(xy, config_.dense_cut_size);
           // No Fill, no allocation

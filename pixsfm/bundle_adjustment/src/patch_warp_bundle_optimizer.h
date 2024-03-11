@@ -98,7 +98,7 @@ int PatchWarpBundleOptimizer::AddResiduals(
     colmap::Reconstruction* reconstruction, ceres::LossFunction* loss_function,
     FeatureView<dtype>& feature_view,
     std::unordered_map<colmap::point3D_t, Reference>& references) {
-  const bool constant_pose =
+  const bool constant_cam_pose =
       !options_.refine_extrinsics || setup_.HasConstantCamPose(image_id);
 
   colmap::Image& image = reconstruction->Image(image_id);
@@ -113,9 +113,9 @@ int PatchWarpBundleOptimizer::AddResiduals(
   colmap::point3D_t point3D_id = point2D.point3D_id;
   colmap::Point3D& point3D = reconstruction->Point3D(point3D_id);
 
-  double* qvec_data = image.Qvec().data();
-  double* tvec_data = image.Tvec().data();
-  double* camera_params_data = camera.params.data();
+  double* cam_from_world_rotation = image.CamFromWorld().rotation.coeffs().data();
+  double* cam_from_world_translation = image.CamFromWorld().translation.data();
+  double* camera_params = camera.params.data();
   double* xyz = point3D.xyz.data();
 
   ceres::ResidualBlockId block_id;
@@ -126,8 +126,8 @@ int PatchWarpBundleOptimizer::AddResiduals(
   colmap::Image& src_image = reconstruction->Image(src_image_id);
   colmap::Camera& src_camera = reconstruction->Camera(src_image.CameraId());
 
-  double* src_qvec_data = src_image.Qvec().data();
-  double* src_tvec_data = src_image.Tvec().data();
+  double* src_qvec_data = src_image.CamFromWorld().rotation.coeffs().data();
+  double* src_tvec_data = src_image.CamFromWorld().translation.data();
   double* src_camera_params_data = src_camera.params.data();
 
   if (src_image_id == image_id) {
@@ -141,8 +141,8 @@ int PatchWarpBundleOptimizer::AddResiduals(
               references.at(point3D_id).NodeOffsets3DData(),
               interpolation_config_);
       block_id =
-          problem_->AddResidualBlock(cost_function, loss_function, qvec_data,
-                                     tvec_data, xyz, camera_params_data);
+          problem_->AddResidualBlock(cost_function, loss_function, cam_from_world_rotation,
+                                     cam_from_world_translation, xyz, camera_params);
       image_num_residuals_[image_id] += 1;
     } else {
       // Do nothing in this case
@@ -161,8 +161,8 @@ int PatchWarpBundleOptimizer::AddResiduals(
               feature_view.GetFeaturePatch(src_image_id, src_point2D_idx),
               interpolation_config_);
       block_id = problem_->AddResidualBlock(
-          cost_function, loss_function, qvec_data, tvec_data, src_qvec_data,
-          src_tvec_data, xyz, camera_params_data);
+          cost_function, loss_function, cam_from_world_rotation, cam_from_world_translation, src_qvec_data,
+          src_tvec_data, xyz, camera_params);
     } else {
       ceres::CostFunction* cost_function =
           CreateFeatureMetricCostFunctor<CHANNELS, N_NODES>(
@@ -172,8 +172,8 @@ int PatchWarpBundleOptimizer::AddResiduals(
               feature_view.GetFeaturePatch(src_image_id, src_point2D_idx),
               interpolation_config_);
       block_id = problem_->AddResidualBlock(
-          cost_function, loss_function, qvec_data, tvec_data, src_qvec_data,
-          src_tvec_data, xyz, camera_params_data, src_camera_params_data);
+          cost_function, loss_function, cam_from_world_rotation, cam_from_world_translation, src_qvec_data,
+          src_tvec_data, xyz, camera_params, src_camera_params_data);
     }
 
     image_num_residuals_[image_id] += 1;

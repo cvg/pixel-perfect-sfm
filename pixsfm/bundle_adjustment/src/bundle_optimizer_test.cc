@@ -84,8 +84,7 @@ void GenerateReconstruction(const size_t num_images, const size_t num_points,
     const camera_t camera_id = static_cast<camera_t>(i);
     const image_t image_id = static_cast<image_t>(i);
 
-    Camera camera;
-    camera.InitializeWithId(SimpleRadialCameraModel::model_id,
+    Camera camera = Camera::CreateFromModelId(kInvalidCameraId, SimpleRadialCameraModel::model_id,
                             kFocalLengthFactor * kImageSize, kImageSize,
                             kImageSize);
     camera.camera_id = camera_id;
@@ -95,20 +94,21 @@ void GenerateReconstruction(const size_t num_images, const size_t num_points,
     image.SetImageId(image_id);
     image.SetCameraId(camera_id);
     image.SetName(std::to_string(i));
-    image.Qvec() = ComposeIdentityQuaternion();
-    image.Tvec() =
-        Eigen::Vector3d(RandomUniformReal(-1.0, 1.0), RandomUniformReal(-1.0, 1.0), 10);
+    image.CamFromWorld() = Rigid3d(
+              Eigen::Quaterniond::Identity(),
+              Eigen::Vector3d(
+                      RandomUniformReal(-1.0, 1.0), RandomUniformReal(-1.0, 1.0), 10));
     image.SetRegistered(true);
     reconstruction->AddImage(image);
 
-    const Eigen::Matrix3x4d proj_matrix = image.ProjectionMatrix();
+    const Eigen::Matrix3x4d cam_from_world = image.CamFromWorld().ToMatrix();
 
     std::vector<Eigen::Vector2d> points2D;
     for (const auto& point3D : reconstruction->Points3D()) {
-      EXPECT_TRUE(HasPointPositiveDepth(proj_matrix, point3D.second.xyz));
+      EXPECT_TRUE(HasPointPositiveDepth(cam_from_world, point3D.second.xyz));
       // Get exact projection of 3D point.
-      Eigen::Vector2d point2D =
-           ProjectPointToImage(point3D.second.xyz, proj_matrix, camera);
+      Eigen::Vector2d point2D = camera.ImgFromCam(
+                (image.CamFromWorld() * point3D.second.xyz).hnormalized());
       // Add some uniform noise.
       point2D += Eigen::Vector2d(RandomUniformReal(-2.0, 2.0), RandomUniformReal(-2.0, 2.0));
       points2D.push_back(point2D);
@@ -142,9 +142,8 @@ void CompareReconstructions(colmap::Reconstruction* reconstruction1,
   for (auto& image_pair : reconstruction1->Images()) {
     auto& image1 = image_pair.second;
     auto& image2 = reconstruction2->Image(image_pair.first);
-    EXPECT_ALL_NEAR(image1.Qvec(), image2.Qvec());
-    EXPECT_ALL_NEAR(image1.Tvec(), image2.Tvec());
-  }
+    EXPECT_ALL_NEAR((image1).CamFromWorld().rotation.coeffs(), (image2).CamFromWorld().rotation.coeffs());
+    EXPECT_ALL_NEAR((image1).CamFromWorld().translation, (image2).CamFromWorld().translation);
 
   for (auto& camera_pair : reconstruction1->Cameras()) {
     auto& camera1 = camera_pair.second;
@@ -194,8 +193,8 @@ TEST(BundleOptimizer, TwoView) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantTvec(1, {0});
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPositions(1, {0});
 
   colmap::BundleAdjustmentOptions options;
   TestBA(reconstruction, options, config);
@@ -210,8 +209,8 @@ TEST(BundleOptimizer, TwoViewConstantCamera) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantPose(1);
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPose(1);
   config.SetConstantCamIntrinsics(0);
 
   colmap::BundleAdjustmentOptions options;
@@ -230,8 +229,8 @@ TEST(BundleOptimizer, PartiallyContainedTracks) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantPose(1);
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPose(1);
 
   colmap::BundleAdjustmentOptions options;
   TestBA(reconstruction, options, config);
@@ -253,8 +252,8 @@ TEST(BundleOptimizer, PartiallyContainedTracksForceToOptimizePoint) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantPose(1);
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPose(1);
   config.AddVariablePoint(add_variable_point3D_id);
   config.AddConstantPoint(add_constant_point3D_id);
 
@@ -274,8 +273,8 @@ TEST(BundleOptimizer, ConstantPoints) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantPose(1);
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPose(1);
   config.AddConstantPoint(constant_point3D_id1);
   config.AddConstantPoint(constant_point3D_id2);
 
@@ -293,8 +292,8 @@ TEST(BundleOptimizer, VariableImage) {
   config.AddImage(0);
   config.AddImage(1);
   config.AddImage(2);
-  config.SetConstantPose(0);
-  config.SetConstantTvec(1, {0});
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPositions(1, {0});
 
   colmap::BundleAdjustmentOptions options;
   TestBA(reconstruction, options, config);
@@ -309,8 +308,8 @@ TEST(BundleOptimizer, ConstantFocalLength) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantTvec(1, {0});
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPositions(1, {0});
 
   colmap::BundleAdjustmentOptions options;
   options.refine_focal_length = false;
@@ -326,8 +325,8 @@ TEST(BundleOptimizer, VariablePrincipalPoint) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantTvec(1, {0});
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPositions(1, {0});
 
   colmap::BundleAdjustmentOptions options;
   options.refine_principal_point = true;
@@ -343,8 +342,8 @@ TEST(BundleOptimizer, ConstantExtraParam) {
   colmap::BundleAdjustmentConfig config;
   config.AddImage(0);
   config.AddImage(1);
-  config.SetConstantPose(0);
-  config.SetConstantTvec(1, {0});
+  config.SetConstantCamPose(0);
+  config.SetConstantCamPositions(1, {0});
 
   colmap::BundleAdjustmentOptions options;
   options.refine_extra_params = false;

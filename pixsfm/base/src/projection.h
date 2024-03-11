@@ -76,14 +76,14 @@ inline void WorldToPixel(const T* camera_params, const T* qvec, const T* tvec,
 }
 
 inline void WorldToPixel(const colmap::Camera& camera,
-                         const Eigen::Vector4d& qvec,
-                         const Eigen::Vector3d& tvec,
+                         const colmap::Rigid3d& cam_from_world,
                          const Eigen::Vector3d& xyz, double* xy) {
   switch (camera.model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                                  \
   case colmap::CameraModel::model_id:                                   \
-    WorldToPixel<colmap::CameraModel>(camera.params.data(), qvec.data(), \
-                                      tvec.data(), xyz.data(), xy);     \
+    WorldToPixel<colmap::CameraModel>(camera.params.data(),             \
+    cam_from_world.rotation.coeffs().data(),                            \
+    cam_from_world.translation.data(), xyz.data(), xy);                 \
     break;
     CAMERA_MODEL_SWITCH_CASES
 #undef CAMERA_MODEL_CASE
