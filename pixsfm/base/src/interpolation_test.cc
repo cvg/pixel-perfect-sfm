@@ -1,4 +1,3 @@
-#define TEST_NAME "base/interpolation"
 #include <gtest/gtest.h>
 
 #include <ceres/ceres.h>
@@ -44,12 +43,12 @@ class TestInterpolation2D {
         double f[kDataDimension], dfdr[kDataDimension], dfdc[kDataDimension];
         interpolator.Evaluate(r, c, f, dfdr, dfdc);
         for (int dim = 0; dim < kDataDimension; ++dim) {
-          BOOST_CHECK_LT(std::abs(f[dim] - (dim * dim + 1) * EvaluateF(r, c)),
+          EXPECT_LT(std::abs(f[dim] - (dim * dim + 1) * EvaluateF(r, c)),
                          1.0e-8);
-          BOOST_CHECK_LT(
+          EXPECT_LT(
               std::abs(dfdr[dim] - (dim * dim + 1) * EvaluatedFdr(r, c)),
               1.0e-8);
-          BOOST_CHECK_LT(
+          EXPECT_LT(
               std::abs(dfdc[dim] - (dim * dim + 1) * EvaluatedFdc(r, c)),
               1.0e-8);
         }
@@ -90,7 +89,7 @@ class TestInterpolation2D {
   std::unique_ptr<double[]> values_;
 };
 
-TEST(ZeroFunction) {
+TEST(Interpolation, ZeroFunction) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   InterpolationConfig configs[2];
   configs[0].mode = InterpolatorType::BICUBIC;
@@ -106,7 +105,7 @@ TEST(ZeroFunction) {
   }
 }
 
-TEST(Degree00Function) {
+TEST(Interpolation, Degree00Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   InterpolationConfig configs[3];
@@ -125,7 +124,7 @@ TEST(Degree00Function) {
   }
 }
 
-TEST(Degree01Function) {
+TEST(Interpolation, Degree01Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   coeff(0, 2) = 0.1;
@@ -144,7 +143,7 @@ TEST(Degree01Function) {
   }
 }
 
-TEST(Degree10Function) {
+TEST(Interpolation, Degree10Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   coeff(0, 1) = 0.1;
@@ -163,7 +162,7 @@ TEST(Degree10Function) {
   }
 }
 
-TEST(Degree11Function) {
+TEST(Interpolation, Degree11Function) {
   Eigen::Matrix3d coeff = Eigen::Matrix3d::Zero();
   coeff(2, 2) = 1.0;
   coeff(0, 1) = 0.1;
@@ -184,7 +183,7 @@ TEST(Degree11Function) {
   }
 }
 
-TEST(L2Normalize) {
+TEST(Interpolation, L2Normalize) {
   InterpolationConfig interpolation_config;
   interpolation_config.l2_normalize = true;
 
@@ -197,13 +196,13 @@ TEST(L2Normalize) {
   PixelInterpolator<Grid2D<double, 2>> interpolator(interpolation_config, grid);
 
   interpolator.Evaluate(0.5, 2.5, f, dfdr, dfdc);
-  BOOST_CHECK_LT(std::abs(1.0 - f[0] * f[0] - f[1] * f[1]), 1.0e-10);
+  EXPECT_LT(std::abs(1.0 - f[0] * f[0] - f[1] * f[1]), 1.0e-10);
 
   interpolator.Evaluate(1.5, 1.5, f, dfdr, dfdc);
-  BOOST_CHECK_LT(std::abs(1.0 - f[0] * f[0] - f[1] * f[1]), 1.0e-10);
+  EXPECT_LT(std::abs(1.0 - f[0] * f[0] - f[1] * f[1]), 1.0e-10);
 
   interpolator.Evaluate(0.0, 3.0, f, dfdr, dfdc);
-  BOOST_CHECK_LT(std::abs(1.0 - f[0] * f[0] - f[1] * f[1]), 1.0e-10);
+  EXPECT_LT(std::abs(1.0 - f[0] * f[0] - f[1] * f[1]), 1.0e-10);
 }
 
 // Assumes stacked format
@@ -236,7 +235,7 @@ Eigen::VectorXd compute_std_per_channel(double* data, int channels,
   return std;
 }
 
-TEST(NCCNormalize) {
+TEST(Interpolation, NCCNormalize) {
   InterpolationConfig interpolation_config;
   interpolation_config.l2_normalize = false;
   interpolation_config.ncc_normalize = true;
@@ -263,11 +262,11 @@ TEST(NCCNormalize) {
   mean = compute_mean_per_channel(f, 2, 4);
   stddev = compute_std_per_channel(f, 2, 4);
 
-  BOOST_CHECK_LT(std::abs(mean(0)), 1.0e-8);
-  BOOST_CHECK_LT(std::abs(mean(1)), 1.0e-8);
+  EXPECT_LT(std::abs(mean(0)), 1.0e-8);
+  EXPECT_LT(std::abs(mean(1)), 1.0e-8);
 
-  BOOST_CHECK_LT(std::abs(stddev(0) - 1.0), 1.0e-8);
-  BOOST_CHECK_LT(std::abs(stddev(1) - 1.0), 1.0e-8);
+  EXPECT_LT(std::abs(stddev(0) - 1.0), 1.0e-8);
+  EXPECT_LT(std::abs(stddev(1) - 1.0), 1.0e-8);
 }
 void TestInterpolationJetEvaluation(InterpolationConfig interpolation_config) {
   // clang-format off
@@ -304,13 +303,13 @@ void TestInterpolationJetEvaluation(InterpolationConfig interpolation_config) {
   interpolator.Evaluate(r_jet, c_jet, f_jets);
   EXPECT_EQ(f_jets[0].a, f[0]);
   EXPECT_EQ(f_jets[1].a, f[1]);
-  BOOST_CHECK_LT((f_jets[0].v - dfdr[0] * r_jet.v - dfdc[0] * c_jet.v).norm(),
+  EXPECT_LT((f_jets[0].v - dfdr[0] * r_jet.v - dfdc[0] * c_jet.v).norm(),
                  1.0e-10);
-  BOOST_CHECK_LT((f_jets[1].v - dfdr[1] * r_jet.v - dfdc[1] * c_jet.v).norm(),
+  EXPECT_LT((f_jets[1].v - dfdr[1] * r_jet.v - dfdc[1] * c_jet.v).norm(),
                  1.0e-10);
 }
 
-TEST(BiCubicInterpolation) {
+TEST(Interpolation, BiCubicInterpolation) {
   InterpolationConfig interpolation_config;
   interpolation_config.mode = InterpolatorType::BILINEAR;
   interpolation_config.l2_normalize = false;
@@ -349,15 +348,15 @@ void TestSimilarToCeres() {
       base_interpolator->Evaluate(r / 10.0, c / 10.0, f, dfdr, dfdc);
       simd_interpolator->Evaluate(r / 10.0, c / 10.0, f2, dfdr2, dfdc2);
       for (int i = 0; i < CHANNELS; i++) {
-        BOOST_CHECK_LT(std::abs(f2[i] - f[i]), 1.0e-5);
-        BOOST_CHECK_LT(std::abs(dfdr2[i] - dfdr[i]), 1.0e-5);
-        BOOST_CHECK_LT(std::abs(dfdc2[i] - dfdc[i]), 1.0e-5);
+        EXPECT_LT(std::abs(f2[i] - f[i]), 1.0e-5);
+        EXPECT_LT(std::abs(dfdr2[i] - dfdr[i]), 1.0e-5);
+        EXPECT_LT(std::abs(dfdc2[i] - dfdc[i]), 1.0e-5);
       }
     }
   }
 }
 
-TEST(BiCubicSimilarCeres) {
+TEST(Interpolation, BiCubicSimilarCeres) {
   TestSimilarToCeres<float, 128>();
   TestSimilarToCeres<double, 128>();
   TestSimilarToCeres<half, 128>();

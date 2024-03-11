@@ -80,7 +80,7 @@ int CostMapBundleOptimizer::AddResiduals(const colmap::image_t image_id,
                                          ceres::LossFunction* loss_function,
                                          FeatureView<dtype>& feature_view) {
   const bool constant_pose =
-      !options_.refine_extrinsics || setup_.HasConstantPose(image_id);
+      !options_.refine_extrinsics || setup_.HasConstantCamPose(image_id);
 
   colmap::Image& image = reconstruction->Image(image_id);
   colmap::Camera& camera = reconstruction->Camera(image.CameraId());

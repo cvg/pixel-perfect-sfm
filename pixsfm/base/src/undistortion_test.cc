@@ -1,5 +1,4 @@
 // Check undistortion
-#define TEST_NAME "base/undistortion"
 #include <gtest/gtest.h>
 
 #include <colmap/image/undistortion.h>
@@ -18,9 +17,9 @@ void TestCamToCamFromImg(const std::vector<double> params, const Eigen::Vector3d
   EXPECT_EQ(y, xxyy.y());
   UndistortionAutodiffModel<CameraModel>::ImageToCam(params.data(), x, y, &u,
                                                        &v);
-  CHECK_LT(std::abs(u - uvw.x()), 1e-6);
-  CHECK_LT(std::abs(v - uvw.y()), 1e-6);
-  CHECK_LT(std::abs(v - uvw.z()), 1e-6);
+  EXPECT_LT(std::abs(u - uvw.x()), 1e-6);
+  EXPECT_LT(std::abs(v - uvw.y()), 1e-6);
+  EXPECT_LT(std::abs(v - uvw.z()), 1e-6);
 }
 
 template <typename CameraModel>
@@ -33,16 +32,16 @@ void TestUndistortion(const std::vector<double> params, const double u0,
   vp = v0;
   CameraModel::IterativeUndistortion(params.data(), &uc, &vc);
   CeresIterativeUndistortion<CameraModel>(params.data(), &up, &vp);
-  CHECK_NEAR(uc, up, 1.0e-6);
-  CHECK_NEAR(vc, vp, 1.0e-6);
+  EXPECT_NEAR(uc, up, 1.0e-6);
+  EXPECT_NEAR(vc, vp, 1.0e-6);
 
   double du, dv;
   CameraModel::Distortion(params.data(), u0, v0, &du, &dv);
   double uu = u0 + du;
   double vv = v0 + dv;
   CeresIterativeUndistortion<CameraModel>(params.data(), &uu, &vv);
-  CHECK_NEAR(u0, uu, 1.0e-6);
-  CHECK_NEAR(v0, vv, 1.0e-6);
+  EXPECT_NEAR(u0, uu, 1.0e-6);
+  EXPECT_NEAR(v0, vv, 1.0e-6);
 }
 
 template <typename CameraModel>

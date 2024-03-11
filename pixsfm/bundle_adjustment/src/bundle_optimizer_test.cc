@@ -30,7 +30,6 @@
 // Author: Johannes L. Schoenberger (jsch-at-demuc-dot-de)
 // Edited by: Philipp Lindenberger
 
-#define TEST_NAME "bundle_adjustment/bundle_optimizer"
 #include <gtest/gtest.h>
 
 #include <colmap/estimators/bundle_adjustment.h>
@@ -51,9 +50,9 @@
 // a rather big tolerance
 #define TOL 1.0e-4
 
-#define CHECK_ALL_CLOSE(vec1, vec2)             \
+#define EXPECT_ALL_NEAR(vec1, vec2)             \
   for (int i = 0; i < vec1.size(); i++) {             \
-    CHECK_NEAR(vec1[i], vec2[i], TOL);                \
+    EXPECT_NEAR(vec1[i], vec2[i], TOL);                \
   }
 
 namespace colmap {
@@ -143,20 +142,20 @@ void CompareReconstructions(colmap::Reconstruction* reconstruction1,
   for (auto& image_pair : reconstruction1->Images()) {
     auto& image1 = image_pair.second;
     auto& image2 = reconstruction2->Image(image_pair.first);
-    CHECK_ALL_CLOSE(image1.Qvec(), image2.Qvec());
-    CHECK_ALL_CLOSE(image1.Tvec(), image2.Tvec());
+    EXPECT_ALL_NEAR(image1.Qvec(), image2.Qvec());
+    EXPECT_ALL_NEAR(image1.Tvec(), image2.Tvec());
   }
 
   for (auto& camera_pair : reconstruction1->Cameras()) {
     auto& camera1 = camera_pair.second;
     auto& camera2 = reconstruction2->Camera(camera_pair.first);
-    CHECK_ALL_CLOSE(camera1.params, camera2.params);
+    EXPECT_ALL_NEAR(camera1.params, camera2.params);
   }
 
   for (auto& point_pair : reconstruction1->Points3D()) {
     auto& point3D1 = point_pair.second;
     auto& point3D2 = reconstruction2->Point3D(point_pair.first);
-    CHECK_ALL_CLOSE(point3D1.xyz, point3D2.xyz);
+    EXPECT_ALL_NEAR(point3D1.xyz, point3D2.xyz);
   }
 }
 
@@ -186,7 +185,7 @@ void TestBA(colmap::Reconstruction& reconstruction,
   ASSERT_TRUE(geom_bundle_adjuster.Run(&reconstruction2));
   CompareReconstructions(&reconstruction, &reconstruction2);
 }
-TEST(TwoView, Nominal) {
+TEST(BundleOptimizer, TwoView) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -202,7 +201,7 @@ TEST(TwoView, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(TwoViewConstantCamera, Nominal) {
+TEST(BundleOptimizer, TwoViewConstantCamera) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -219,7 +218,7 @@ TEST(TwoViewConstantCamera, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(PartiallyContainedTracks, Nominal) {
+TEST(BundleOptimizer, PartiallyContainedTracks) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(3, 100, &reconstruction,
@@ -238,7 +237,7 @@ TEST(PartiallyContainedTracks, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(PartiallyContainedTracksForceToOptimizePoint, Nominal) {
+TEST(BundleOptimizer, PartiallyContainedTracksForceToOptimizePoint) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(3, 100, &reconstruction,
@@ -263,7 +262,7 @@ TEST(PartiallyContainedTracksForceToOptimizePoint, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(ConstantPoints, Nominal) {
+TEST(BundleOptimizer, ConstantPoints) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -284,7 +283,7 @@ TEST(ConstantPoints, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(VariableImage, Nominal) {
+TEST(BundleOptimizer, VariableImage) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(3, 100, &reconstruction,
@@ -301,7 +300,7 @@ TEST(VariableImage, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(ConstantFocalLength, Nominal) {
+TEST(BundleOptimizer, ConstantFocalLength) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -318,7 +317,7 @@ TEST(ConstantFocalLength, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(VariablePrincipalPoint, Nominal) {
+TEST(BundleOptimizer, VariablePrincipalPoint) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,
@@ -335,7 +334,7 @@ TEST(VariablePrincipalPoint, Nominal) {
   TestBA(reconstruction, options, config);
 }
 
-TEST(ConstantExtraParam, Nominal) {
+TEST(BundleOptimizer, ConstantExtraParam) {
   colmap::Reconstruction reconstruction;
   colmap::CorrespondenceGraph correspondence_graph;
   colmap::GenerateReconstruction(2, 100, &reconstruction,

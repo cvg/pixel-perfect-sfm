@@ -1,5 +1,3 @@
-
-#define TEST_NAME "base/projection"
 #include <gtest/gtest.h>
 
 #include "base/src/projection.h"
@@ -18,16 +16,16 @@ void TestWorldToPixelToWorld(const double* params) {
   CalculateDepth(qvec, tvec, point3D, &depth);
   PixelToWorld<CameraModel>(params, qvec, tvec, xy[0], xy[1], &depth, world);
   for (int i = 0; i < 3; i++) {
-    CHECK_NEAR(point3D[i], world[i], 1.0e-6);
+    EXPECT_NEAR(point3D[i], world[i], 1.0e-6);
   }
 }
 
-TEST(SimplePinhole, Nominal) {
+TEST(Projection, SimplePinhole) {
   std::vector<double> params = {655.123, 386.123, 511.123};
   TestWorldToPixelToWorld<colmap::SimplePinholeCameraModel>(params.data());
 }
 
-TEST(Radial, Nominal) {
+TEST(Projection, Radial) {
   std::vector<double> params = {651.123, 386.123, 511.123, 0, 0};
   TestWorldToPixelToWorld<colmap::RadialCameraModel>(params.data());
   params[3] = 0.1;

@@ -99,7 +99,7 @@ int PatchWarpBundleOptimizer::AddResiduals(
     FeatureView<dtype>& feature_view,
     std::unordered_map<colmap::point3D_t, Reference>& references) {
   const bool constant_pose =
-      !options_.refine_extrinsics || setup_.HasConstantPose(image_id);
+      !options_.refine_extrinsics || setup_.HasConstantCamPose(image_id);
 
   colmap::Image& image = reconstruction->Image(image_id);
   colmap::Camera& camera = reconstruction->Camera(image.CameraId());
