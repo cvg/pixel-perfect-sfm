@@ -8,9 +8,10 @@
 namespace py = pybind11;
 
 #include <ceres/ceres.h>
-#include <colmap/base/reconstruction.h>
-#include <colmap/base/cost_functions.h>
-#include <colmap/optim/bundle_adjustment.h>
+#include <colmap/scene/reconstruction.h>
+#include <colmap/sensor/models.h>
+#include <colmap/estimators/cost_functions.h>
+#include <colmap/estimators/bundle_adjustment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 #include <colmap/util/threading.h>
@@ -47,7 +48,7 @@ class QueryBundleOptimizer {
 
   template <int CHANNELS, int N_NODES, typename dtype>
   inline ceres::ResidualBlockId AddFeatureReferenceResidual(
-      ceres::Problem* problem, int camera_model_id, double* camera_params_data,
+      ceres::Problem* problem, colmap::CameraModelId model_id, double* camera_params_data,
       double* qvec_data, double* tvec_data, double* xyz_data,
       const double* reference_descriptor_data,
       const double* node_offsets3D,  // CAN BE NULL if N_NODES==1
@@ -55,7 +56,7 @@ class QueryBundleOptimizer {
 
   template <typename dtype>
   inline ceres::ResidualBlockId AddFeatureReferenceResidual(
-      ceres::Problem* problem, int camera_model_id, double* camera_params_data,
+      ceres::Problem* problem, colmap::CameraModelId model_id, double* camera_params_data,
       double* qvec_data, double* tvec_data, double* xyz_data,
       const double* reference_descriptor_data,
       const double* node_offsets3D,  // CAN BE NULL if N_NODES==1
@@ -122,36 +123,36 @@ void QueryBundleOptimizer::ParameterizeQuery(ceres::Problem* problem,
                                !options_.refine_principal_point &&
                                !options_.refine_extra_params;
   if (constant_camera) {
-    problem->SetParameterBlockConstant(camera.ParamsData());
+    problem->SetParameterBlockConstant(camera.params.data());
   } else {
     std::vector<int> const_camera_params;
     if (!options_.refine_focal_length) {
-      const std::vector<size_t>& params_idxs = camera.FocalLengthIdxs();
+      const colmap::span<const size_t>& params_idxs = camera.FocalLengthIdxs();
       const_camera_params.insert(const_camera_params.end(), params_idxs.begin(),
                                  params_idxs.end());
     }
     if (!options_.refine_principal_point) {
-      const std::vector<size_t>& params_idxs = camera.PrincipalPointIdxs();
+      const colmap::span<const size_t>& params_idxs = camera.PrincipalPointIdxs();
       const_camera_params.insert(const_camera_params.end(), params_idxs.begin(),
                                  params_idxs.end());
     }
     if (!options_.refine_extra_params) {
-      const std::vector<size_t>& params_idxs = camera.ExtraParamsIdxs();
+      const colmap::span<const size_t>& params_idxs = camera.ExtraParamsIdxs();
       const_camera_params.insert(const_camera_params.end(), params_idxs.begin(),
                                  params_idxs.end());
     }
 
     if (const_camera_params.size() > 0) {
-      colmap::SetSubsetManifold(static_cast<int>(camera.NumParams()),
+      colmap::SetSubsetManifold(static_cast<int>(colmap::CameraModelNumParams(camera.model_id)),
                                 const_camera_params, problem,
-                                camera.ParamsData());
+                                camera.params.data());
     }
   }
 }
 
 template <typename dtype>
 ceres::ResidualBlockId QueryBundleOptimizer::AddFeatureReferenceResidual(
-    ceres::Problem* problem, int camera_model_id, double* camera_params_data,
+    ceres::Problem* problem, const colmap::CameraModelId model_id, double* camera_params_data,
     double* qvec_data, double* tvec_data, double* xyz_data,
     const double* reference_descriptor_data,
     const double* node_offsets3D,  // CAN BE NULL if N_NODES==1
@@ -161,7 +162,7 @@ ceres::ResidualBlockId QueryBundleOptimizer::AddFeatureReferenceResidual(
 #define REGISTER_METHOD(CHANNELS, N_NODES)                                  \
   if (channels == CHANNELS && n_nodes == N_NODES) {                         \
     return AddFeatureReferenceResidual<CHANNELS, N_NODES>(                  \
-        problem, camera_model_id, camera_params_data, qvec_data, tvec_data, \
+        problem, model_id, camera_params_data, qvec_data, tvec_data, \
         xyz_data, reference_descriptor_data, node_offsets3D, patch,         \
         loss_function);                                                     \
   }
@@ -171,7 +172,7 @@ ceres::ResidualBlockId QueryBundleOptimizer::AddFeatureReferenceResidual(
 
 template <int CHANNELS, int N_NODES, typename dtype>
 ceres::ResidualBlockId QueryBundleOptimizer::AddFeatureReferenceResidual(
-    ceres::Problem* problem, int camera_model_id, double* camera_params_data,
+    ceres::Problem* problem, const colmap::CameraModelId model_id, double* camera_params_data,
     double* qvec_data, double* tvec_data, double* xyz_data,
     const double* reference_descriptor_data,
     const double* node_offsets3D,  // CAN BE NULL if N_NODES==1
@@ -181,7 +182,7 @@ ceres::ResidualBlockId QueryBundleOptimizer::AddFeatureReferenceResidual(
 
   feature_cost_function =
       CreateFeatureReferenceCostFunctor<CHANNELS, N_NODES, -1>(
-          camera_model_id, patch, reference_descriptor_data, node_offsets3D,
+          model_id, patch, reference_descriptor_data, node_offsets3D,
           interpolation_config_);
 
   // ADD COST FUNCTION TO PROBLEM //

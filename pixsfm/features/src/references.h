@@ -10,7 +10,7 @@ namespace py = pybind11;
 #include <highfive/H5File.hpp>
 #include <highfive/H5Group.hpp>
 
-#include <colmap/base/track.h>
+#include <colmap/scene/track.h>
 #include <colmap/util/types.h>
 
 #include "util/src/log_exceptions.h"

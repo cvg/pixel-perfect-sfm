@@ -1,5 +1,4 @@
-#define TEST_NAME "base/interpolation"
-#include <colmap/util/testing.h>
+#include <gtest/gtest.h>
 #include <colmap/util/timer.h>
 
 #include <ceres/ceres.h>
@@ -37,11 +36,11 @@ void TestSimilarity(int n_descriptors,
   timer.PrintSeconds();
 
   for (int i = 0; i < CHANNELS; i++) {
-    BOOST_CHECK_LT(std::abs(robust_mean1(0, i) - robust_mean2(i)), 1.0e-8);
+    EXPECT_LT(std::abs(robust_mean1(0, i) - robust_mean2(i)), 1.0e-8);
   }
 }
 
-BOOST_AUTO_TEST_CASE(TestSimilar) {
+TEST(Interpolation, Similar) {
   InterpolationConfig interpolation_config;
   interpolation_config.l2_normalize = false;
 

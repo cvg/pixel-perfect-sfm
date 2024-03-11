@@ -2,8 +2,8 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
-#include <colmap/base/reconstruction.h>
+#include <colmap/scene/projection.h>
+#include <colmap/scene/reconstruction.h>
 #include <colmap/util/types.h>
 
 #include "features/src/featurepatch.h"
@@ -99,8 +99,8 @@ struct FeatureMetricCostFunctor {
       const FeaturePatch<dtype>& patch, const FeaturePatch<dtype>& src_patch,
       InterpolationConfig& interpolation_config) {
     return (new ceres::AutoDiffCostFunction<
-            FeatureMetricCostFunctor, N_NODES * CHANNELS, 4, 3, 4, 3, 3,
-            CameraModel::kNumParams, SourceCameraModel::kNumParams>(
+            FeatureMetricCostFunctor, N_NODES * CHANNELS, 4, 3, 4, 3, 3, CameraModel::num_params,
+            SourceCameraModel::num_params>(
         new FeatureMetricCostFunctor(patch, &src_patch, interpolation_config)));
   }
 
@@ -108,8 +108,8 @@ struct FeatureMetricCostFunctor {
                                      InterpolationConfig& interpolation_config,
                                      const double* reference_descriptor) {
     return (new ceres::AutoDiffCostFunction<
-            FeatureMetricCostFunctor, N_NODES * CHANNELS, 4, 3, 4, 3, 3,
-            CameraModel::kNumParams, SourceCameraModel::kNumParams>(
+            FeatureMetricCostFunctor, N_NODES * CHANNELS, 4, 3, 4, 3, 3, CameraModel::num_params,
+            SourceCameraModel::num_params>(
         new FeatureMetricCostFunctor(target_patch, NULL, interpolation_config,
                                      reference_descriptor)));
   }
@@ -213,7 +213,7 @@ struct FeatureMetricSharedIntrinsicsCostFunctor
       InterpolationConfig& interpolation_config) {
     return (new ceres::AutoDiffCostFunction<
             FeatureMetricSharedIntrinsicsCostFunctor, N_NODES * CHANNELS, 4, 3,
-            4, 3, 3, CameraModel::kNumParams>(
+            4, 3, 3, CameraModel::num_params>(
         new FeatureMetricSharedIntrinsicsCostFunctor(patch, &src_patch,
                                                      interpolation_config)));
   }
@@ -223,7 +223,7 @@ struct FeatureMetricSharedIntrinsicsCostFunctor
                                      const double* reference_descriptor) {
     return (new ceres::AutoDiffCostFunction<
             FeatureMetricSharedIntrinsicsCostFunctor, N_NODES * CHANNELS, 4, 3,
-            4, 3, 3, CameraModel::kNumParams>(
+            4, 3, 3, CameraModel::num_params>(
         new FeatureMetricSharedIntrinsicsCostFunctor(
             target_patch, NULL, interpolation_config, reference_descriptor)));
   }
@@ -259,16 +259,16 @@ Initialization Wrappers: (resolving camera model templates)
 
 template <int CHANNELS, int N_NODES, typename dtype>
 ceres::CostFunction* CreateFeatureMetricCostFunctor(
-    int camera_model_id,               // Src
+    const colmap::CameraModelId model_id,               // Src
     const FeaturePatch<dtype>& patch,  // Src
-    int src_camera_model_id, const FeaturePatch<dtype>& src_patch,
+    const colmap::CameraModelId src_model_id, const FeaturePatch<dtype>& src_patch,
     InterpolationConfig& interpolation_config) {
   // Temporary
-  THROW_CHECK_EQ(camera_model_id, src_camera_model_id);
+  THROW_CHECK_EQ(model_id, src_model_id);
 
-  switch (camera_model_id) {
+  switch (model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                            \
-  case colmap::CameraModel::kModelId:                             \
+  case colmap::CameraModel::model_id:                             \
     return FeatureMetricSameModelCostFunctor<                     \
         colmap::CameraModel, dtype, CHANNELS,                     \
         N_NODES>::Create(patch, src_patch, interpolation_config); \
@@ -282,15 +282,15 @@ ceres::CostFunction* CreateFeatureMetricCostFunctor(
 
 template <int CHANNELS, int N_NODES, typename dtype>
 ceres::CostFunction* CreateFeatureMetricRegularizerCostFunctor(
-    int camera_model_id, int src_camera_model_id,
+    const colmap::CameraModelId model_id, const colmap::CameraModelId src_model_id,
     const FeaturePatch<dtype>& patch, const double* reference_descriptor,
     InterpolationConfig& interpolation_config) {
   // Temporary
-  THROW_CHECK_EQ(camera_model_id, src_camera_model_id);
+  THROW_CHECK_EQ(model_id, src_model_id);
 
-  switch (camera_model_id) {
+  switch (model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                                       \
-  case colmap::CameraModel::kModelId:                                        \
+  case colmap::CameraModel::model_id:                                        \
     return FeatureMetricSameModelCostFunctor<                                \
         colmap::CameraModel, dtype, CHANNELS,                                \
         N_NODES>::Create(patch, interpolation_config, reference_descriptor); \
@@ -304,12 +304,12 @@ ceres::CostFunction* CreateFeatureMetricRegularizerCostFunctor(
 
 template <int CHANNELS, int N_NODES, typename dtype>
 ceres::CostFunction* CreateFeatureMetricSharedIntrinsicsCostFunctor(
-    int camera_model_id, const FeaturePatch<dtype>& patch,
+    const colmap::CameraModelId model_id, const FeaturePatch<dtype>& patch,
     const FeaturePatch<dtype>& src_patch,
     InterpolationConfig& interpolation_config) {
-  switch (camera_model_id) {
+  switch (model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                            \
-  case colmap::CameraModel::kModelId:                             \
+  case colmap::CameraModel::model_id:                             \
     return FeatureMetricSharedIntrinsicsCostFunctor<              \
         colmap::CameraModel, dtype, CHANNELS,                     \
         N_NODES>::Create(patch, src_patch, interpolation_config); \
@@ -321,12 +321,12 @@ ceres::CostFunction* CreateFeatureMetricSharedIntrinsicsCostFunctor(
 
 template <int CHANNELS, int N_NODES, typename dtype>
 ceres::CostFunction* CreateFeatureMetricSharedIntrinsicsRegularizerCostFunctor(
-    int camera_model_id, const FeaturePatch<dtype>& patch,
+    const colmap::CameraModelId model_id, const FeaturePatch<dtype>& patch,
     const double* reference_descriptor,
     InterpolationConfig& interpolation_config) {
-  switch (camera_model_id) {
+  switch (model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                                       \
-  case colmap::CameraModel::kModelId:                                        \
+  case colmap::CameraModel::model_id:                                        \
     return FeatureMetricSharedIntrinsicsCostFunctor<                         \
         dtype, colmap::CameraModel, CHANNELS,                                \
         N_NODES>::Create(patch, interpolation_config, reference_descriptor); \
@@ -349,13 +349,13 @@ ceres::CostFunction* CreateFeatureMetricCostFunctor(
 
 #define REGISTER_METHOD(CHANNELS, N_NODES)                            \
   if (channels == CHANNELS && n_nodes == N_NODES) {                   \
-    if (camera.Params() == src_camera.Params()) {                     \
+    if (camera.params == src_camera.params) {                         \
       return CreateFeatureMetricSharedIntrinsicsCostFunctor<CHANNELS, \
                                                             N_NODES>( \
-          camera.ModelId(), patch, src_patch, interpolation_config);  \
+          camera.model_id, patch, src_patch, interpolation_config);   \
     } else {                                                          \
       return CreateFeatureMetricCostFunctor<CHANNELS, N_NODES>(       \
-          camera.ModelId(), patch, src_camera.ModelId(), src_patch,   \
+          camera.model_id, patch, src_camera.model_id, src_patch,     \
           interpolation_config);                                      \
     }                                                                 \
   }

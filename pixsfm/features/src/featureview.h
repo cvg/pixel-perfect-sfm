@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-#include <colmap/base/reconstruction.h>
+#include <colmap/scene/reconstruction.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/types.h>
 
