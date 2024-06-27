@@ -31,12 +31,37 @@ With `pixsfm`, you can:
 
 ## Installation
 
-`pixsfm` requires Python >=3.6, GCC >=6.1, and COLMAP 3.8 [installed from source](https://colmap.github.io/install.html#build-from-source). The core optimization is implemented in C++ with [Ceres >= 2.1](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) + [pyceres](https://github.com/cvg/pyceres) built from source:
+`pixsfm` requires Python >=3.6 (recommended version: 3.8.2), GCC >=6.1, and COLMAP 3.8 [installed from source](https://colmap.github.io/install.html#build-from-source). The core optimization is implemented in C++ with [Ceres >= 2.1](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) + [pyceres](https://github.com/cvg/pyceres) built from source:
 
 ```bash
 # install COLMAP following colmap.github.io/install.html#build-from-source, tag 3.8
 sudo apt-get install libhdf5-dev
 git clone https://github.com/cvg/pixel-perfect-sfm --recursive
+```
+
+Before installing any other requirements, build and install third party code
+```bash
+# install HighFive
+cd third-party/HighFive
+mkdir build
+cd build
+cmake ..
+make -j
+make install
+cd ../../..
+
+# install pybind
+cd third-party/pybind11
+git checkout tags/v2.11.1 # checkout correct version just to make sure
+mkdir build
+cd build
+cmake ..
+make -j
+make install
+```
+
+Install python requirements
+```bash
 cd pixel-perfect-sfm
 pip install -r requirements.txt
 ```
