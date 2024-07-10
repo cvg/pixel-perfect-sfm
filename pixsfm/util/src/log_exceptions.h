@@ -4,6 +4,7 @@
 #include <string>
 
 #include <colmap/util/misc.h>
+#include <colmap/sensor/models.h>
 
 #include <pybind11/pybind11.h>
 
@@ -68,6 +69,9 @@ inline void __ThrowCheckImplMsg(const char* file, const int line,
                                              __GetCheckString(m.c_str()));
   }
 }
+
+std::ostream& operator<<(std::ostream& os, const colmap::CameraModelId& id);
+
 
 template <typename T1, typename T2>
 void __ThrowCheckOpImpl(const char* file, const int line, const bool result,

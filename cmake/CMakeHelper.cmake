@@ -148,8 +148,9 @@ macro(PIXSFM_ADD_TEST TARGET_NAME)
         set_target_properties(${TARGET_NAME} PROPERTIES FOLDER
             ${PIXSFM_TARGETS_ROOT_FOLDER}/${FOLDER_NAME})
         target_link_libraries(${TARGET_NAME} pixsfm
-                              ${PIXSFM_EXTERNAL_LIBRARIES}
-                              ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+                              ${PIXSFMb_EXTERNAL_LIBRARIES}
+                              GTest::gtest
+                              GTest::gtest_main)
         add_test("${FOLDER_NAME}/${TARGET_NAME}" ${TARGET_NAME})
     endif()
 endmacro(PIXSFM_ADD_TEST)

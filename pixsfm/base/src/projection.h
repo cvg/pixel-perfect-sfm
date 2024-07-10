@@ -1,10 +1,10 @@
 
 #pragma once
 
-#include <colmap/base/camera_models.h>
-#include <colmap/base/image.h>
-#include <colmap/base/projection.h>
-#include <colmap/util/math.h>
+#include <colmap/sensor/models.h>
+#include <colmap/scene/image.h>
+#include <colmap/scene/projection.h>
+#include <colmap/math/math.h>
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -42,7 +42,7 @@ template <typename CameraModel, typename T>
 void PixelToWorld(const T* camera_params, const T* qvec, const T* tvec,
                   const T x, const T y, const T* depth, T* xyz) {
   T local_xyz[3];
-  UndistortionAutodiffModel<CameraModel>::ImageToWorld(
+  UndistortionAutodiffModel<CameraModel>::ImageToCam(
       camera_params, x, y, &local_xyz[0], &local_xyz[1]);
 
   local_xyz[2] = T(1.0);
@@ -69,20 +69,21 @@ inline void WorldToPixel(const T* camera_params, const T* qvec, const T* tvec,
   // Project to image plane.
   projection[0] /= projection[2];  // u
   projection[1] /= projection[2];  // v
+  projection[2] /= projection[2];  // w
 
-  CameraModel::WorldToImage(camera_params, projection[0], projection[1], &xy[0],
-                            &xy[1]);
+  CameraModel::ImgFromCam(camera_params, projection[0], projection[1], projection[2],
+                            &xy[0], &xy[1]);
 }
 
 inline void WorldToPixel(const colmap::Camera& camera,
-                         const Eigen::Vector4d& qvec,
-                         const Eigen::Vector3d& tvec,
+                         const colmap::Rigid3d& cam_from_world,
                          const Eigen::Vector3d& xyz, double* xy) {
-  switch (camera.ModelId()) {
+  switch (camera.model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                                  \
-  case colmap::CameraModel::kModelId:                                   \
-    WorldToPixel<colmap::CameraModel>(camera.ParamsData(), qvec.data(), \
-                                      tvec.data(), xyz.data(), xy);     \
+  case colmap::CameraModel::model_id:                                   \
+    WorldToPixel<colmap::CameraModel>(camera.params.data(),             \
+    cam_from_world.rotation.coeffs().data(),                            \
+    cam_from_world.translation.data(), xyz.data(), xy);                 \
     break;
     CAMERA_MODEL_SWITCH_CASES
 #undef CAMERA_MODEL_CASE

@@ -11,10 +11,10 @@ namespace py = pybind11;
 #include <highfive/H5Group.hpp>
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
-#include <colmap/base/reconstruction.h>
-#include <colmap/optim/bundle_adjustment.h>
-#include <colmap/util/alignment.h>
+#include <colmap/scene/projection.h>
+#include <colmap/scene/reconstruction.h>
+#include <colmap/estimators/bundle_adjustment.h>
+#include <colmap/util/eigen_alignment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 #include <colmap/util/threading.h>

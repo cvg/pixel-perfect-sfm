@@ -7,7 +7,7 @@ PIXSFM_ADD_SOURCES(
     src/math.h
     src/simple_logger.h
     src/simple_logger.cc
-    src/log_exceptions.h
+    src/log_exceptions.h src/log_exceptions.cc
     src/memory.h
     src/threading.h src/threading.cc
     src/stringprintf.h src/stringprintf.cc
