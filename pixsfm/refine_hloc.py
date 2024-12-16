@@ -1,4 +1,5 @@
 import argparse
+import os
 from typing import Optional
 from pathlib import Path
 from omegaconf import OmegaConf
@@ -52,6 +53,12 @@ class PixSfM(PixSfM_colmap):
                 matches_path, reference_model_path,
                 **hloc_args)
 
+        # if not os.path.exists(model_path):
+        print("~"*100 + "\n" + "~"*100)
+        print("Extraction , Matching , Database Insertion Completed")
+        print("~"*100 + "\n" + "~"*100)
+        return None, None
+            
         reconstruction = pycolmap.Reconstruction(str(model_path))
         if self.conf.BA.apply:
             reconstruction, ba_data, feature_manager = self.run_ba(
@@ -145,6 +152,13 @@ class PixSfM(PixSfM_colmap):
             reference_model_path=None, cache_path=cache_path,
             feature_manager=feature_manager, **hloc_args)
 
+def add_camera_args(parser):
+    parser.add_argument(
+        '--camera_model', type=str, default='OPENCV',
+        help='Camera model for the image reader options.')
+    parser.add_argument(
+        '--single_camera', action='store_true',
+        help='Enable single camera mode for reconstruction.')
 
 def add_hloc_args(parser):
     parser.add_argument(
@@ -170,7 +184,7 @@ if __name__ == "__main__":
         help='Output HDF5 file where the refine keypoints will be written.')
     add_hloc_args(parser_ka)
     add_common_args(parser_ka)
-
+    
     parser_rec = subparsers.add_parser(
         'reconstructor', aliases=['rec', 'sfm'],
         help='Full 3D reconstruction with keypoint and bundle adjustments.')
@@ -178,6 +192,7 @@ if __name__ == "__main__":
         '--sfm_dir', type=Path, required=True, help='Output SfM model.')
     add_hloc_args(parser_rec)
     add_common_args(parser_rec)
+    add_camera_args(parser_rec)
 
     parser_tri = subparsers.add_parser(
         'triangulator', aliases=['tri'],
@@ -197,19 +212,32 @@ if __name__ == "__main__":
     if args.config is not None:
         conf = OmegaConf.merge(OmegaConf.load(args.config), conf)
     sfm = PixSfM(conf)
+    
+    camera_model = args.camera_model if 'camera_model' in args else 'OPENCV'
+    image_options = pycolmap.ImageReaderOptions(camera_model=camera_model)
 
     if args.command == 'keypoint_adjuster':
         logger.info("Will perform keypoint adjustment.")
+        logger.info("Received arguments for 3D triangulation: %s", args)
         sfm.refine_keypoints(
             args.output_path, args.features_path, args.image_dir,
             args.pairs_path, args.matches_path, cache_path=args.cache_path)
     elif args.command == 'reconstructor':
         logger.info("Will perform full 3D reconstruction.")
-        sfm.reconstruction(
-            args.sfm_dir, args.image_dir, args.pairs_path, args.features_path,
-            args.matches_path, cache_path=args.cache_path)
+        logger.info("Received arguments for 3D triangulation: %s", args)
+        if args.single_camera:
+            sfm.reconstruction(
+                args.sfm_dir, args.image_dir, args.pairs_path, args.features_path,
+                args.matches_path, cache_path=args.cache_path, camera_mode=pycolmap.CameraMode.SINGLE,
+                image_options=image_options)
+        else:
+            sfm.reconstruction(
+                args.sfm_dir, args.image_dir, args.pairs_path, args.features_path,
+                args.matches_path, cache_path=args.cache_path,
+                image_options=image_options)
     elif args.command == 'triangulator':
         logger.info("Will perform 3D triangulation.")
+        logger.info("Received arguments for 3D triangulation: %s", args)
         sfm.triangulation(
             args.sfm_dir, args.reference_sfm_model,
             args.image_dir, args.pairs_path, args.features_path,
