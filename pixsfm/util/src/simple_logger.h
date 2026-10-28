@@ -8,13 +8,23 @@
 // Adapted by Philipp Lindenberger (Phil26AT)
 
 #pragma once
+#include <algorithm>
 #include <ctime>
 #include <iostream>
 #include <mutex>
+#include <string>
 #include <third-party/progressbar.h>
 //
 
 namespace pixsfm {
+
+// Replacement for colmap::PrintHeading2, which was removed in COLMAP 3.9.
+inline void PrintHeading2(const std::string& heading) {
+  std::cout << std::endl
+            << heading << std::endl
+            << std::string(std::min<int>(heading.size(), 78), '-')
+            << std::endl;
+}
 
 // https://stackoverflow.com/questions/16357999/current-date-and-time-as-string
 inline std::string GetCurrentDateTimeString() {

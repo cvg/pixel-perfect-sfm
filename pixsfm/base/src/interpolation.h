@@ -689,7 +689,7 @@ class PixelInterpolator : public Interpolator<Grid> {
   // with automatic differentiation. The first is for when a scalar
   // evaluation is done, and the second one is for when Jets are used.
   void Evaluate(const double& r, const double& c, double* f) const {
-    Interpolator<Grid>::template Evaluate(r, c, f);
+    Interpolator<Grid>::Evaluate(r, c, f);
     // typedef Eigen::Matrix<double, Grid::DATA_DIMENSION, 1> VType;
     // Eigen::Map<VType>(f).normalize();
   }

@@ -53,11 +53,16 @@ message(${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/cmake/)
 set(TEMP_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
 set(CMAKE_MODULE_PATH ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/cmake)
 
-set(pybind11_DIR
-    ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/cmake/pybind11/)
+# Use the bundled pybind11 and HighFive if they were installed with PIXSFM.
+if(EXISTS ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/cmake/pybind11/)
+    set(pybind11_DIR
+        ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/cmake/pybind11/)
+endif()
 
-set(HighFive_DIR
-    ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/HighFive/CMake/)
+if(EXISTS ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/HighFive/CMake/)
+    set(HighFive_DIR
+        ${PIXSFM_INSTALL_PREFIX}/share/pixsfm/third-party/HighFive/CMake/)
+endif()
 
 if(PIXSFM_FIND_QUIETLY)
     find_package(COLMAP QUIET)
@@ -90,26 +95,21 @@ set(PIXSFM_INCLUDE_DIRS
     ${HDF5_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}
-    ${FREEIMAGE_INCLUDE_DIRS}
     ${CERES_INCLUDE_DIRS}
-    ${COLMAP_INCLUDE_DIRS}
 )
 
 set(PIXSFM_LINK_DIRS
     ${PIXSFM_INSTALL_PREFIX}/lib/pixsfm
-    ${COLMAP_LINK_DIRS}
 )
 
 set(PIXSFM_INTERNAL_LIBRARIES
     HighFive
     pybind11::module
-    pybind11::embed
 )
 
 set(PIXSFM_EXTERNAL_LIBRARIES
     ${CERES_LIBRARIES}
-    ${FREEIMAGE_LIBRARIES}
-    ${COLMAP_LIBRARIES}
+    colmap::colmap
     ${HDF5_C_LIBRARIES}
     ${Boost_LIBRARIES}
 )

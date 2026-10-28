@@ -26,6 +26,24 @@ namespace py = pybind11;
 #include <atomic>
 #include <mutex>
 
+#ifndef H5_USE_HALF_FLOAT
+// HighFive was built without half-float support: map half_float::half to
+// HDF5 like HighFive does when built with it.
+namespace HighFive {
+template <>
+inline AtomicType<half_float::half>::AtomicType() {
+  _hid = H5Tcopy(H5T_NATIVE_FLOAT);
+  // Sign position, exponent position, exponent size, mantissa position,
+  // mantissa size
+  H5Tset_fields(_hid, 15, 10, 5, 0, 10);
+  // Total datatype size (in bytes)
+  H5Tset_size(_hid, 2);
+  // Floating point exponent bias
+  H5Tset_ebias(_hid, 15);
+}
+}  // namespace HighFive
+#endif
+
 namespace pixsfm {
 
 struct PatchStatus {

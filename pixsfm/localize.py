@@ -74,13 +74,13 @@ def main(
                 ret, log = pose_from_cluster(
                         localizer, qname, qcam, cluster_ids, features, matches,
                         image_path=image_dir / qname)
-                if ret['success'] and ret['num_inliers'] > best_inliers:
+                if ret is not None and ret['num_inliers'] > best_inliers:
                     best_cluster = i
                     best_inliers = ret['num_inliers']
                 logs_clusters.append(log)
             if best_cluster is not None:
                 ret = logs_clusters[best_cluster]['PnP_ret']
-                poses[qname] = (ret['qvec'], ret['tvec'])
+                poses[qname] = ret['cam_from_world']
             logs['loc'][qname] = {
                 'db': db_ids,
                 'best_cluster': best_cluster,
@@ -91,11 +91,11 @@ def main(
             ret, log = pose_from_cluster(
                     localizer, qname, qcam, db_ids, features, matches,
                     image_path=image_dir / qname)
-            if ret['success']:
-                poses[qname] = (ret['qvec'], ret['tvec'])
+            if ret is not None:
+                poses[qname] = ret['cam_from_world']
             else:
                 closest = reference_sfm.images[db_ids[0]]
-                poses[qname] = (closest.qvec, closest.tvec)
+                poses[qname] = closest.cam_from_world()
             log['covisibility_clustering'] = covisibility_clustering
             logs['loc'][qname] = log
 
@@ -103,9 +103,9 @@ def main(
     logger.info(f'Writing poses to {results}...')
     with open(results, 'w') as f:
         for q in poses:
-            qvec, tvec = poses[q]
-            qvec = ' '.join(map(str, qvec))
-            tvec = ' '.join(map(str, tvec))
+            # COLMAP convention: qw qx qy qz tx ty tz
+            qvec = ' '.join(map(str, poses[q].rotation.quat[[3, 0, 1, 2]]))
+            tvec = ' '.join(map(str, poses[q].translation))
             name = q.split('/')[-1]
             if prepend_camera_name:
                 name = q.split('/')[-2] + '/' + name

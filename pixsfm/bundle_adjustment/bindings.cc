@@ -62,7 +62,7 @@ void bind_bundle_adjustment(py::module& m) {
           .def_readwrite("apply_sqrt", &CostMapConfig::apply_sqrt)
           .def_readwrite("dense_cut_size", &CostMapConfig::dense_cut_size)
           .def_readwrite("num_threads", &CostMapConfig::num_threads)
-          .def_readwrite("loss", &CostMapConfig::loss, py::keep_alive<1, 2>());
+          .def_readwrite("loss", &CostMapConfig::loss);
   make_dataclass(costmapconf);
 
   auto refconf =
@@ -74,8 +74,7 @@ void bind_bundle_adjustment(py::module& m) {
           .def_readwrite("num_threads", &ReferenceConfig::num_threads)
           .def_readwrite("compute_offsets3D",
                          &ReferenceConfig::compute_offsets3D)
-          .def_readwrite("loss", &ReferenceConfig::loss,
-                         py::keep_alive<1, 2>());
+          .def_readwrite("loss", &ReferenceConfig::loss);
   make_dataclass(refconf);
 
   py::class_<BundleAdjustmentSetup>(m, "BundleAdjustmentSetup")
@@ -130,8 +129,7 @@ void bind_bundle_adjustment(py::module& m) {
                          &BundleOptimizerOptions::min_track_length)
           .def_readwrite("print_summary",
                          &BundleOptimizerOptions::print_summary)
-          .def_readwrite("loss", &BundleOptimizerOptions::loss,
-                         py::keep_alive<1, 2>());
+          .def_readwrite("loss", &BundleOptimizerOptions::loss);
   make_dataclass(ba_options);
 
   auto frba = py::class_<FeatureReferenceBundleOptimizer>(

@@ -1,14 +1,10 @@
-import pkg_resources
 from pathlib import Path
 from typing import Optional
 # from omegaconf import OmegaConf
 
 
-default_configs = {}
-for c in pkg_resources.resource_listdir("pixsfm", "configs/"):
-    if c.endswith(".yaml"):
-        default_configs[Path(c).stem] = Path(pkg_resources.resource_filename(
-            "pixsfm", "configs/"+c))
+default_configs = {
+    c.stem: c for c in sorted(Path(__file__).parent.glob("*.yaml"))}
 
 
 def parse_config_path(name_or_path: Optional[str]) -> Path:

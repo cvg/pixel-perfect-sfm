@@ -1,5 +1,7 @@
 #pragma once
+#ifdef __linux__
 #include "sys/sysinfo.h"
+#endif
 #include "sys/types.h"
 
 #include <ceres/ceres.h>

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
-#include <colmap/base/reconstruction.h>
+#include <colmap/geometry/rigid3.h>
+#include <colmap/scene/reconstruction.h>
 #include <colmap/util/types.h>
 
 #include "features/src/featurepatch.h"
@@ -90,7 +90,7 @@ struct FeatureReferenceCostFunctor {
                                      const double* node_offsets3D = NULL) {
     return (new ceres::AutoDiffCostFunction<FeatureReferenceCostFunctor,
                                             N_RESIDUALS, 4, 3, 3,
-                                            CameraModel::kNumParams>(
+                                            CameraModel::num_params>(
         new FeatureReferenceCostFunctor(patch, interpolation_config,
                                         reference_descriptor, node_offsets3D)));
   }
@@ -169,9 +169,13 @@ struct FeatureReferenceConstantPoseCostFunctor
       InterpolationConfig& interpolation_config, const double* qvec,
       const double* tvec, const double* ref_descriptor = NULL,
       const double* node_offsets3D = NULL)
-      : Parent(patch, interpolation_config, ref_descriptor, node_offsets3D),
-        qvec_(qvec),
-        tvec_(tvec) {}
+      : Parent(patch, interpolation_config, ref_descriptor, node_offsets3D) {
+    CHECK_NOTNULL(qvec);
+    CHECK_NOTNULL(tvec);
+    // Copy the (constant) pose, so callers do not need to keep it alive.
+    std::copy(qvec, qvec + 4, qvec_);
+    std::copy(tvec, tvec + 3, tvec_);
+  }
 
   static ceres::CostFunction* Create(const FeaturePatch<dtype>& patch,
                                      InterpolationConfig& interpolation_config,
@@ -181,7 +185,7 @@ struct FeatureReferenceConstantPoseCostFunctor
     return (
         new ceres::AutoDiffCostFunction<FeatureReferenceConstantPoseCostFunctor,
                                         N_RESIDUALS, 3,
-                                        CameraModel::kNumParams>(
+                                        CameraModel::num_params>(
             new FeatureReferenceConstantPoseCostFunctor(
                 patch, interpolation_config, qvec, tvec, reference_descriptor,
                 node_offsets3D)));
@@ -191,9 +195,6 @@ struct FeatureReferenceConstantPoseCostFunctor
   bool operator()(const T* const point3D, const T* const camera_params,
                   T* residuals) const {
     // TYPE cast
-    CHECK_NOTNULL(qvec_);
-    CHECK_NOTNULL(tvec_);
-
     T tvec[3] = {T(tvec_[0]), T(tvec_[1]), T(tvec_[2])};
     T qvec[4] = {T(qvec_[0]), T(qvec_[1]), T(qvec_[2]), T(qvec_[3])};
     return Parent::operator()(qvec, tvec, point3D, camera_params, residuals);
@@ -202,8 +203,8 @@ struct FeatureReferenceConstantPoseCostFunctor
  protected:
   static constexpr int N_RESIDUALS =
       N_NODES * (OUT_CHANNELS > 0 ? OUT_CHANNELS : CHANNELS);
-  const double* qvec_;
-  const double* tvec_;
+  double qvec_[4];
+  double tvec_[3];
 };
 
 template <typename CameraModel, typename dtype, int CHANNELS,
@@ -218,36 +219,37 @@ Initialization Wrappers: (resolving camera model templates)
 
 template <int CHANNELS, int N_NODES, int OUT_CHANNELS, typename dtype>
 ceres::CostFunction* CreateFeatureReferenceCostFunctor(
-    int camera_model_id, const FeaturePatch<dtype>& patch,
+    colmap::CameraModelId camera_model_id, const FeaturePatch<dtype>& patch,
     const double* reference_descriptor, const double* node_offsets3D,
     InterpolationConfig& interpolation_config) {
   switch (camera_model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                               \
-  case colmap::CameraModel::kModelId:                                \
+  case colmap::CameraModel::model_id:                                \
     return FeatureReferenceCostFunctor<                              \
         colmap::CameraModel, dtype, CHANNELS, N_NODES,               \
         OUT_CHANNELS>::Create(patch, interpolation_config,           \
                               reference_descriptor, node_offsets3D); \
     break;
-    CAMERA_MODEL_SWITCH_CASES
+    PIXSFM_CAMERA_MODEL_SWITCH_CASES
 #undef CAMERA_MODEL_CASE
   }
 }
 
 template <int CHANNELS, int N_NODES, int OUT_CHANNELS, typename dtype>
 ceres::CostFunction* CreateFeatureReferenceConstantPoseCostFunctor(
-    int camera_model_id, double* qvec, double* tvec,
-    const FeaturePatch<dtype>& patch, const double* reference_descriptor,
+    colmap::CameraModelId camera_model_id, const double* qvec,
+    const double* tvec, const FeaturePatch<dtype>& patch,
+    const double* reference_descriptor,
     const double* node_offsets3D, InterpolationConfig& interpolation_config) {
   switch (camera_model_id) {
 #define CAMERA_MODEL_CASE(CameraModel)                                 \
-  case colmap::CameraModel::kModelId:                                  \
+  case colmap::CameraModel::model_id:                                  \
     return FeatureReferenceConstantPoseCostFunctor<                    \
         colmap::CameraModel, dtype, CHANNELS, N_NODES,                 \
         OUT_CHANNELS>::Create(patch, interpolation_config, qvec, tvec, \
                               reference_descriptor, node_offsets3D);   \
     break;
-    CAMERA_MODEL_SWITCH_CASES
+    PIXSFM_CAMERA_MODEL_SWITCH_CASES
 #undef CAMERA_MODEL_CASE
   }
 }
@@ -255,7 +257,7 @@ ceres::CostFunction* CreateFeatureReferenceConstantPoseCostFunctor(
 // PyBind interfaces
 template <typename dtype>
 ceres::CostFunction* CreateFeatureReferenceCostFunctor(
-    int camera_model_id, const FeaturePatch<dtype>& patch,
+    colmap::CameraModelId camera_model_id, const FeaturePatch<dtype>& patch,
     Eigen::Ref<DescriptorMatrixXd> reference_descriptor,
     InterpolationConfig& interpolation_config) {
   int channels = patch.Channels();
@@ -287,8 +289,8 @@ ceres::CostFunction* CreateFeatureReferenceCostFunctor(
 
 template <typename dtype>
 ceres::CostFunction* CreateFeatureReferenceConstantPoseCostFunctor(
-    int camera_model_id, Eigen::Ref<Eigen::Vector4d> qvec,
-    Eigen::Ref<Eigen::Vector3d> tvec, const FeaturePatch<dtype>& patch,
+    colmap::CameraModelId camera_model_id,
+    const colmap::Rigid3d& cam_from_world, const FeaturePatch<dtype>& patch,
     Eigen::Ref<DescriptorMatrixXd> reference_descriptor,
     InterpolationConfig& interpolation_config) {
   int channels = patch.Channels();
@@ -301,7 +303,8 @@ ceres::CostFunction* CreateFeatureReferenceConstantPoseCostFunctor(
   if (channels == CHANNELS && n_nodes == N_NODES) {                         \
     return CreateFeatureReferenceConstantPoseCostFunctor<CHANNELS, N_NODES, \
                                                          -1>(               \
-        camera_model_id, qvec.data(), tvec.data(), patch,                   \
+        camera_model_id, cam_from_world.params.data(),                      \
+        cam_from_world.params.data() + 4, patch,                            \
         reference_descriptor.data(), nullptr, interpolation_config);        \
   }
 

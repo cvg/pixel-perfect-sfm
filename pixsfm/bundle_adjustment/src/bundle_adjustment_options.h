@@ -11,10 +11,12 @@ namespace py = pybind11;
 #include <highfive/H5Group.hpp>
 
 #include <ceres/ceres.h>
-#include <colmap/base/projection.h>
-#include <colmap/base/reconstruction.h>
-#include <colmap/optim/bundle_adjustment.h>
+#include <colmap/scene/reconstruction.h>
 #include <colmap/util/types.h>
+
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "features/src/featuremap.h"
 #include "features/src/featurepatch.h"
@@ -24,21 +26,68 @@ namespace py = pybind11;
 
 namespace pixsfm {
 
-// Configuration container to setup bundle adjustment problems.
-class BundleAdjustmentSetup : public colmap::BundleAdjustmentConfig {
+// Configuration container to setup bundle adjustment problems. Mirrors the
+// image-based colmap::BundleAdjustmentConfig of COLMAP 3.8 (COLMAP 4.x
+// configures poses per frame instead).
+class BundleAdjustmentSetup {
  public:
-  BundleAdjustmentSetup() : colmap::BundleAdjustmentConfig() {}
-  BundleAdjustmentSetup(const colmap::BundleAdjustmentConfig& config)
-      : colmap::BundleAdjustmentConfig(config) {}
+  BundleAdjustmentSetup() = default;
 
-  // Overwrite methods which trigger glog
+  size_t NumImages() const;
+  size_t NumPoints() const;
+  size_t NumConstantCameras() const;
+  size_t NumConstantPoses() const;
+  size_t NumConstantTvecs() const;
+  size_t NumVariablePoints() const;
+  size_t NumConstantPoints() const;
+
+  // Add / remove images from the configuration.
+  void AddImage(const colmap::image_t image_id);
+  bool HasImage(const colmap::image_t image_id) const;
+  void RemoveImage(const colmap::image_t image_id);
+
+  // Set cameras of added images as constant or variable. By default all
+  // cameras of added images are variable.
+  void SetConstantCamera(const colmap::camera_t camera_id);
+  void SetVariableCamera(const colmap::camera_t camera_id);
+  bool IsConstantCamera(const colmap::camera_t camera_id) const;
+
+  // Set the pose of added images as constant. The pose is defined as the
+  // rotational and translational part of the projection matrix.
   void SetConstantPose(const colmap::image_t image_id);
+  void SetVariablePose(const colmap::image_t image_id);
+  bool HasConstantPose(const colmap::image_t image_id) const;
+
+  // Set the translational part of the pose, hence the constant pose
+  // indices may be in [0, 1, 2] and must be unique.
   void SetConstantTvec(const colmap::image_t image_id,
                        const std::vector<int>& idxs);
+  void RemoveConstantTvec(const colmap::image_t image_id);
+  bool HasConstantTvec(const colmap::image_t image_id) const;
+
+  // Add / remove points from the configuration. Note that points can either
+  // be variable or constant but not both at the same time.
   void AddVariablePoint(const colmap::point3D_t point3D_id);
   void AddConstantPoint(const colmap::point3D_t point3D_id);
+  bool HasPoint(const colmap::point3D_t point3D_id) const;
+  bool HasVariablePoint(const colmap::point3D_t point3D_id) const;
+  bool HasConstantPoint(const colmap::point3D_t point3D_id) const;
+  void RemoveVariablePoint(const colmap::point3D_t point3D_id);
+  void RemoveConstantPoint(const colmap::point3D_t point3D_id);
 
-  inline void SetAllConstant(colmap::Reconstruction* reconstruction);
+  // Access configuration data.
+  const std::unordered_set<colmap::image_t>& Images() const;
+  const std::unordered_set<colmap::point3D_t>& VariablePoints() const;
+  const std::unordered_set<colmap::point3D_t>& ConstantPoints() const;
+  const std::vector<int>& ConstantTvec(const colmap::image_t image_id) const;
+
+ private:
+  std::unordered_set<colmap::camera_t> constant_camera_ids_;
+  std::unordered_set<colmap::image_t> image_ids_;
+  std::unordered_set<colmap::point3D_t> variable_point3D_ids_;
+  std::unordered_set<colmap::point3D_t> constant_point3D_ids_;
+  std::unordered_set<colmap::image_t> constant_poses_;
+  std::unordered_map<colmap::image_t, std::vector<int>> constant_tvecs_;
 };
 
 struct BundleOptimizerOptions {

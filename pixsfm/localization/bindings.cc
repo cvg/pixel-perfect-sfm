@@ -15,21 +15,21 @@ namespace pixsfm {
 template <typename dtype, typename T>
 void BindSingleQueryBundleOptimizer(py::class_<T>& sqba) {
   sqba.def("run", &T::template RunQuery<dtype, std::vector<Reference>>,
-           py::arg("qvec").noconvert(), py::arg("tvec").noconvert(),
+           py::arg("cam_from_world").noconvert(),
            py::arg("camera").noconvert(), py::arg("points3D"),
            py::arg("fmap").noconvert(), py::arg("references"),
            py::arg("patch_idxs") = py::none(), py::arg("inliers") = py::none());
   sqba.def(
       "run",
       &T::template RunQuery<dtype, std::vector<Eigen::Ref<DescriptorMatrixXd>>>,
-      py::arg("qvec").noconvert(), py::arg("tvec").noconvert(),
+      py::arg("cam_from_world").noconvert(),
       py::arg("camera").noconvert(), py::arg("points3D"),
       py::arg("fmap").noconvert(), py::arg("references"),
       py::arg("patch_idxs") = py::none(), py::arg("inliers") = py::none());
   sqba.def("run",
            &T::template RunQuery<dtype,
                                  std::vector<std::vector<DescriptorMatrixXd>>>,
-           py::arg("qvec").noconvert(), py::arg("tvec").noconvert(),
+           py::arg("cam_from_world").noconvert(),
            py::arg("camera").noconvert(), py::arg("points3D"),
            py::arg("fmap").noconvert(), py::arg("references"),
            py::arg("patch_idxs") = py::none(), py::arg("inliers") = py::none());

@@ -21,7 +21,8 @@ def read_keypoints_from_db(database_path: Path, as_cpp_map: bool = True,
         keypoints_dict = {}
     db = COLMAPDatabase.connect(str(database_path))
     id2name = db.image_id_to_name()
-    for image_id, rows, cols, data in db.execute("SELECT * FROM keypoints"):
+    for image_id, rows, cols, data in db.execute(
+            "SELECT image_id, rows, cols, data FROM keypoints"):
         keypoints = blob_to_array(data, np.float32, (rows, cols))
         keypoints = keypoints.astype(np.float64)[:, :2]  # keep only xy
         keypoints_dict[id2name[image_id]] = keypoints
@@ -34,7 +35,8 @@ def read_matches_from_db(database_path: Path
     db = COLMAPDatabase.connect(database_path)
     id2name = db.image_id_to_name()
     desc = {}
-    for image_id, r, c, data in db.execute("SELECT * FROM descriptors"):
+    for image_id, r, c, data in db.execute(
+            "SELECT image_id, rows, cols, data FROM descriptors"):
         d = blob_to_array(data, np.uint8, (-1, c))
         desc[image_id] = d / np.linalg.norm(d, axis=1, keepdims=True)
     # only compute scores if descriptors are in database

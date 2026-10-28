@@ -124,14 +124,14 @@ def pair_id_to_image_ids(pair_id):
 
 def array_to_blob(array):
     if IS_PYTHON3:
-        return array.tostring()
+        return array.tobytes()
     else:
         return np.getbuffer(array)
 
 
 def blob_to_array(blob, dtype, shape=(-1,)):
     if IS_PYTHON3:
-        return np.fromstring(blob, dtype=dtype).reshape(*shape)
+        return np.frombuffer(blob, dtype=dtype).reshape(*shape).copy()
     else:
         return np.frombuffer(blob, dtype=dtype).reshape(*shape)
 
@@ -183,7 +183,8 @@ class COLMAPDatabase(sqlite3.Connection):
 
         keypoints = np.asarray(keypoints, np.float32)
         self.execute(
-            "INSERT INTO keypoints VALUES (?, ?, ?, ?)",
+            "INSERT INTO keypoints (image_id, rows, cols, data) "
+            "VALUES (?, ?, ?, ?)",
             (image_id,) + keypoints.shape + (array_to_blob(keypoints),))
 
     def add_descriptors(self, image_id, descriptors):

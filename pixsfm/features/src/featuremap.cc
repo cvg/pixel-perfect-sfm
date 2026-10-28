@@ -226,7 +226,7 @@ size_t FeatureMap<dtype>::LoadFromH5GroupChunked(
     std::vector<colmap::point2D_t>* point2D_ids) {
   size_t num_bytes = 0;
   if (fill) {
-    THROW_CHECK(!p2D_idx_to_h5id_.empty())
+    THROW_CHECK(!p2D_idx_to_h5id_.empty());
     HighFive::DataSet patches_dataset = group.getDataSet("patches");
     std::vector<size_t> shape = patches_dataset.getDimensions();
 

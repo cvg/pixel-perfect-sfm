@@ -50,8 +50,7 @@ void bind_keypoint_adjustment(py::module& m) {
       py::class_<KeypointOptimizerOptions>(m, "KeypointOptimizerOptions")
           .def(py::init<>())
           .def_readwrite("solver", &KeypointOptimizerOptions::solver_options)
-          .def_readwrite("loss", &KeypointOptimizerOptions::loss,
-                         py::keep_alive<1, 2>())
+          .def_readwrite("loss", &KeypointOptimizerOptions::loss)
           .def_readwrite("print_summary",
                          &KeypointOptimizerOptions::print_summary)
           .def_readwrite("bound", &KeypointOptimizerOptions::bound);

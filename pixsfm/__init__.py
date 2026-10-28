@@ -22,7 +22,7 @@ from . import (  # noqa F403
 )
 
 cpplog.level = 1  # do not log DEBUG
-pyceres.glog.minloglevel = 4
+pyceres.logging.minloglevel = 4
 
 
 def set_debug():

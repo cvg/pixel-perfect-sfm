@@ -197,5 +197,6 @@ pose_dict = localizer.localize(
     image_path=image_path,
 )
 
-qvec, tvec, success = pose_dict["qvec"], pose_dict["tvec"], pose_dict["success"]
+if pose_dict is not None:  # None if the localization failed
+    cam_from_world = pose_dict["cam_from_world"]  # pycolmap.Rigid3d
 ```

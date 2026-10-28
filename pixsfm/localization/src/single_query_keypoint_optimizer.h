@@ -3,8 +3,8 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include <colmap/base/reconstruction.h>
-#include <colmap/optim/bundle_adjustment.h>
+#include <colmap/scene/reconstruction.h>
+#include <colmap/estimators/bundle_adjustment.h>
 #include <colmap/util/types.h>
 
 #include "base/src/interpolation.h"
@@ -66,7 +66,7 @@ bool SingleQueryKeypointOptimizer::RunQuery(
     RefType& references, std::vector<colmap::point2D_t>* patch_idxs,
     std::vector<bool>* inliers) {
   if (patch_idxs) {
-    THROW_CHECK_EQ(patch_idxs->size(), keypoints.rows())
+    THROW_CHECK_EQ(patch_idxs->size(), keypoints.rows());
   }
   size_t channels = fmap.Channels();
   size_t n_nodes = interpolation_config_.nodes.size();

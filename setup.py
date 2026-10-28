@@ -1,5 +1,6 @@
 import os
 import re
+import shlex
 import sys
 import platform
 import subprocess
@@ -7,7 +8,6 @@ from pathlib import Path
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
-from distutils.version import LooseVersion
 
 
 class CMakeExtension(Extension):
@@ -46,9 +46,9 @@ class CMakeBuild(build_ext):
                 ", ".join(e.name for e in self.extensions))
 
         if platform.system() == "Windows":
-            cmake_version = LooseVersion(re.search(r'version\s*([\d.]+)',
-                                                   out.decode()).group(1))
-            if cmake_version < '3.1.0':
+            cmake_version = tuple(int(v) for v in re.search(
+                r'version\s*(\d+)\.(\d+)', out.decode()).groups())
+            if cmake_version < (3, 1):
                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
 
         for ext in self.extensions:
@@ -59,7 +59,10 @@ class CMakeBuild(build_ext):
             os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
+                      '-DPython_EXECUTABLE=' + sys.executable,
                       '-DTESTS_ENABLED=OFF']
+        # Extra CMake arguments, e.g. from a package build environment.
+        cmake_args += shlex.split(os.environ.get('CMAKE_ARGS', ''))
 
         avx2_enabled = os.environ.get("AVX2_ENABLED")
         if avx2_enabled is not None:
@@ -83,7 +86,9 @@ class CMakeBuild(build_ext):
             build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', '-j']
+            # CMake itself honors CMAKE_BUILD_PARALLEL_LEVEL if set.
+            if 'CMAKE_BUILD_PARALLEL_LEVEL' not in os.environ:
+                build_args += ['--', '-j']
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -118,7 +123,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     packages=find_packages(include=["pixsfm", "pixsfm.*"]),
-    python_requires='>=3.6',
+    python_requires='>=3.10',
     ext_modules=[CMakeExtension('pixsfm._pixsfm')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

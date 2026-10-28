@@ -7,7 +7,7 @@
 namespace py = pybind11;
 
 #include <ceres/ceres.h>
-#include <colmap/optim/bundle_adjustment.h>
+#include <colmap/estimators/bundle_adjustment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 #include <colmap/util/threading.h>
@@ -89,7 +89,7 @@ bool QueryKeypointOptimizer::SolveProblem(ceres::Problem* problem) {
   }
 
   if (options_.print_summary) {
-    colmap::PrintHeading2("Query Keypoint Adjustment Report");
+    PrintHeading2("Query Keypoint Adjustment Report");
     PrintSolverSummary(
         summary);  // We need to replace this with our own Printer!!!
   }

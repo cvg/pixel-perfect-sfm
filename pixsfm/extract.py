@@ -164,7 +164,7 @@ def features_from_reconstruction(
     for image_id, image in reconstruction.images.items():
         cam = reconstruction.cameras[image.camera_id]
         # @TODO: Add function in pycolmap that performs next 3 lines in C++
-        if image.num_points3D() <= 0:
+        if image.num_points3D <= 0:
             continue
         else:
             keypoint_ids, p3D_ids = zip(*[(p2D_id, p2D.point3D_id) for
@@ -172,9 +172,11 @@ def features_from_reconstruction(
                                           enumerate(image.points2D)
                                           if p2D.has_point3D()])
 
-            required_point3Ds = [reconstruction.points3D[i] for i in p3D_ids]
-            projected_keypoints = cam.world_to_image(image.project(
-                                                            required_point3Ds))
+            required_xyz = np.array(
+                [reconstruction.points3D[i].xyz for i in p3D_ids])
+            points_cam = image.cam_from_world() * required_xyz
+            projected_keypoints = cam.img_from_cam(
+                points_cam / points_cam[:, 2:])
             image_list.append(image.name)
 
             keypoints = np.zeros((image.num_points2D(), 2), dtype=np.float64)

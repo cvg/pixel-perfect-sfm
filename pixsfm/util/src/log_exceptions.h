@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 
+#include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 
 #include <pybind11/pybind11.h>
@@ -99,21 +100,11 @@ void __ThrowCheckOpImpl(const char* file, const int line, const bool result,
     throw TemplateException<exception>(__FILE__, __LINE__, \
                                        __GetCheckString(#condition));
 
-#define THROW_CHECK(expr) __ThrowCheckImpl(__FILE__, __LINE__, (expr), #expr);
+// THROW_CHECK and THROW_CHECK_{EQ,NE,LE,LT,GE,GT} are provided by
+// colmap/util/logging.h (and throw std::invalid_argument).
 
 #define THROW_CHECK_MSG(expr, msg) \
   __ThrowCheckImplMsg(__FILE__, __LINE__, (expr), #expr, ToString(msg))
-
-#define THROW_CHECK_OP(name, op, val1, val2)                                \
-  __ThrowCheckOpImpl(__FILE__, __LINE__, (val1 op val2), val1, val2, #val1, \
-                     #val2, #op);
-
-#define THROW_CHECK_EQ(val1, val2) THROW_CHECK_OP(_EQ, ==, val1, val2)
-#define THROW_CHECK_NE(val1, val2) THROW_CHECK_OP(_NE, !=, val1, val2)
-#define THROW_CHECK_LE(val1, val2) THROW_CHECK_OP(_LE, <=, val1, val2)
-#define THROW_CHECK_LT(val1, val2) THROW_CHECK_OP(_LT, <, val1, val2)
-#define THROW_CHECK_GE(val1, val2) THROW_CHECK_OP(_GE, >=, val1, val2)
-#define THROW_CHECK_GT(val1, val2) THROW_CHECK_OP(_GT, >, val1, val2)
 
 #define THROW_CHECK_FILE_EXISTS(path) \
   THROW_CHECK_MSG(ExistsFile(path),   \

@@ -2,13 +2,10 @@
 
 #include <ceres/ceres.h>
 
-#include <colmap/base/camera_models.h>
-#include <colmap/base/camera_rig.h>
-#include <colmap/base/cost_functions.h>
-#include <colmap/base/projection.h>
-#include <colmap/base/reconstruction.h>
-#include <colmap/optim/bundle_adjustment.h>
-#include <colmap/util/alignment.h>
+#include <colmap/estimators/cost_functions/manifold.h>
+#include <colmap/scene/reconstruction.h>
+#include <colmap/sensor/models.h>
+#include <colmap/util/eigen_alignment.h>
 #include <colmap/util/logging.h>
 #include <colmap/util/misc.h>
 #include <colmap/util/threading.h>
@@ -20,6 +17,7 @@
 #include "features/src/references.h"
 
 #include "base/src/callbacks.h"
+#include "base/src/colmap_compat.h"
 
 #include "util/src/log_exceptions.h"
 #include "util/src/statistics.h"
@@ -229,7 +227,7 @@ bool BundleOptimizer<Derived>::SolveProblem(
   }
 
   if (options_.print_summary) {
-    colmap::PrintHeading2("Bundle adjustment report");
+    PrintHeading2("Bundle adjustment report");
     PrintSolverSummary(summary_);
     // We need to replace this with our own Printer!!!
   }
@@ -252,7 +250,7 @@ void BundleOptimizer<Derived>::AddImageToProblem(
   colmap::Image& image = reconstruction->Image(image_id);
   colmap::Camera& camera = reconstruction->Camera(image.CameraId());
 
-  image.NormalizeQvec();
+  NormalizeQvec(image);
 
   // Add residuals to bundle adjustment problem.
   for (colmap::point2D_t point2D_idx = 0; point2D_idx < image.NumPoints2D();
@@ -263,9 +261,9 @@ void BundleOptimizer<Derived>::AddImageToProblem(
       continue;
     }
 
-    colmap::Point3D& point3D = reconstruction->Point3D(point2D.Point3DId());
+    colmap::Point3D& point3D = reconstruction->Point3D(point2D.point3D_id);
 
-    if (static_cast<int>(point3D.Track().Length()) <
+    if (static_cast<int>(point3D.track.Length()) <
         options_.min_track_length) {
       continue;
     }
@@ -286,11 +284,11 @@ void BundleOptimizer<Derived>::AddPointToProblem(
   colmap::Point3D& point3D = reconstruction->Point3D(point3D_id);
 
   // Is 3D point already fully contained in the problem? If so we skip.
-  if (point3D_reg_track_idx_[point3D_id].size() == point3D.Track().Length()) {
+  if (point3D_reg_track_idx_[point3D_id].size() == point3D.track.Length()) {
     return;
   }
 
-  for (const auto& track_el : point3D.Track().Elements()) {
+  for (const auto& track_el : point3D.track.Elements()) {
     // Skip observations that were already added in `FillImages`.
     if (setup_.HasImage(track_el.image_id)) {
       continue;
@@ -318,8 +316,8 @@ bool BundleOptimizer<Derived>::RegisterPoint3DObservation(
     colmap::point2D_t point2D_idx, colmap::Reconstruction* reconstruction) {
   colmap::Point3D& point3D = reconstruction->Point3D(point3D_id);
 
-  for (int track_idx = 0; track_idx < point3D.Track().Length(); ++track_idx) {
-    auto& track_el = point3D.Track().Element(track_idx);
+  for (int track_idx = 0; track_idx < point3D.track.Length(); ++track_idx) {
+    auto& track_el = point3D.track.Element(track_idx);
     if (track_el.image_id == image_id && track_el.point2D_idx == point2D_idx) {
       point3D_reg_track_idx_[point3D_id].insert(track_idx);
       return true;
@@ -342,16 +340,16 @@ void BundleOptimizer<Derived>::ParameterizePoints(
     int min_track_length =
         options_.min_track_length > 0
             ? std::min(options_.min_track_length,
-                       static_cast<int>(point3D.Track().Length()))
-            : point3D.Track().Length();
+                       static_cast<int>(point3D.track.Length()))
+            : point3D.track.Length();
     if (min_track_length > elem.second.size()) {
-      problem_->SetParameterBlockConstant(point3D.XYZ().data());
+      problem_->SetParameterBlockConstant(point3D.xyz.data());
       ++cnt;
     } else if (options_.solver_options.use_inner_iterations) {
       // Ruhe-Weldin 2 approximation to the VarPro Algorithm:
       // Use EPI (RCS is solved outside, i.e. only camera parameters)
       options_.solver_options.inner_iteration_ordering->AddElementToGroup(
-          point3D.XYZ().data(), 0);
+          point3D.xyz.data(), 0);
     }
   }
   STDLOG(DEBUG) << "Num Constant points3D: " << cnt << std::endl;
@@ -359,7 +357,7 @@ void BundleOptimizer<Derived>::ParameterizePoints(
   // been added to problem.
   for (const colmap::point3D_t point3D_id : setup_.ConstantPoints()) {
     colmap::Point3D& point3D = reconstruction->Point3D(point3D_id);
-    problem_->SetParameterBlockConstant(point3D.XYZ().data());
+    problem_->SetParameterBlockConstant(point3D.xyz.data());
   }
 }
 
@@ -372,8 +370,8 @@ void BundleOptimizer<Derived>::ParameterizeImages(
       colmap::Image& image = reconstruction->Image(image_id);
       colmap::Camera& camera = reconstruction->Camera(image.CameraId());
 
-      double* qvec_data = image.Qvec().data();
-      double* tvec_data = image.Tvec().data();
+      double* qvec_data = QvecData(image);
+      double* tvec_data = TvecData(image);
 
       const bool constant_pose = !options_.refine_extrinsics ||
                                  setup_.HasConstantPose(image_id) ||
@@ -381,12 +379,14 @@ void BundleOptimizer<Derived>::ParameterizeImages(
 
       // Set pose parameterization.
       if (!constant_pose) {
-        colmap::SetQuaternionManifold(problem_.get(), qvec_data);
+        colmap::SetManifold(problem_.get(), qvec_data,
+                            colmap::CreateEigenQuaternionManifold());
         if (setup_.HasConstantTvec(image_id)) {
           const std::vector<int>& constant_tvec_idxs =
               setup_.ConstantTvec(image_id);
-          colmap::SetSubsetManifold(3, constant_tvec_idxs, problem_.get(),
-                                    tvec_data);
+          colmap::SetManifold(
+              problem_.get(), tvec_data,
+              colmap::CreateSubsetManifold(3, constant_tvec_idxs));
         }
       } else {
         problem_->SetParameterBlockConstant(qvec_data);
@@ -411,31 +411,32 @@ void BundleOptimizer<Derived>::ParameterizeCameras(
     colmap::Camera& camera = reconstruction->Camera(camera_id);
 
     if (constant_camera || setup_.IsConstantCamera(camera_id)) {
-      problem_->SetParameterBlockConstant(camera.ParamsData());
+      problem_->SetParameterBlockConstant(camera.params.data());
       continue;
     } else {
       std::vector<int> const_camera_params;
 
       if (!options_.refine_focal_length) {
-        const std::vector<size_t>& params_idxs = camera.FocalLengthIdxs();
+        const auto params_idxs = camera.FocalLengthIdxs();
         const_camera_params.insert(const_camera_params.end(),
                                    params_idxs.begin(), params_idxs.end());
       }
       if (!options_.refine_principal_point) {
-        const std::vector<size_t>& params_idxs = camera.PrincipalPointIdxs();
+        const auto params_idxs = camera.PrincipalPointIdxs();
         const_camera_params.insert(const_camera_params.end(),
                                    params_idxs.begin(), params_idxs.end());
       }
       if (!options_.refine_extra_params) {
-        const std::vector<size_t>& params_idxs = camera.ExtraParamsIdxs();
+        const auto params_idxs = camera.ExtraParamsIdxs();
         const_camera_params.insert(const_camera_params.end(),
                                    params_idxs.begin(), params_idxs.end());
       }
 
       if (const_camera_params.size() > 0) {
-        colmap::SetSubsetManifold(static_cast<int>(camera.NumParams()),
-                                  const_camera_params, problem_.get(),
-                                  camera.ParamsData());
+        colmap::SetManifold(
+            problem_.get(), camera.params.data(),
+            colmap::CreateSubsetManifold(
+                static_cast<int>(camera.params.size()), const_camera_params));
       }
     }
   }

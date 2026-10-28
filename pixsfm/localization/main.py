@@ -63,11 +63,11 @@ def find_unique_min_by_group(errors, idxs, pre_inliers=None):
 
 
 def find_unique_min_reproj_inliers(
-        pnp_points3D_id, qvec, tvec, camera, pnp_points2D, rec,
+        pnp_points3D_id, cam_from_world, camera, pnp_points2D, rec,
         pre_inliers=None, point2D_idxs=None):
-    p3Ds = [rec.points3D[p3D_id] for p3D_id in pnp_points3D_id]
+    p3Ds = [rec.points3D[p3D_id].xyz for p3D_id in pnp_points3D_id]
     errors = compute_reprojection_errors(
-        pnp_points2D, p3Ds, qvec, tvec, camera
+        pnp_points2D, p3Ds, cam_from_world, camera
     )
     inliers = pre_inliers
     for idxs in [pnp_points3D_id, point2D_idxs]:
@@ -79,9 +79,11 @@ def find_unique_min_reproj_inliers(
 
 def compute_reprojection_errors(
         pnp_points2D, pnp_points3D,
-        qvec, tvec, camera):
-    proj = camera.world_to_image(
-        pycolmap.Image(qvec=qvec, tvec=tvec).project(pnp_points3D))
+        cam_from_world, camera):
+    points_cam = cam_from_world * np.asarray(pnp_points3D, dtype=np.float64)
+    # Project onto the normalized image plane without cheirality check.
+    points_cam = points_cam / points_cam[:, 2:]
+    proj = camera.img_from_cam(points_cam)
     return [np.linalg.norm(proj[i] - p2D)
             for i, p2D in enumerate(pnp_points2D)]
 
@@ -228,8 +230,7 @@ class QueryBundleAdjuster:
 
     def refine(
             self,
-            qvec: np.ndarray,
-            tvec: np.ndarray,
+            cam_from_world: pycolmap.Rigid3d,  # refined in-place
             camera: pycolmap.Camera,
             points3D: List[np.ndarray],
             fmap: features.FeatureMap,
@@ -237,13 +238,12 @@ class QueryBundleAdjuster:
             inliers:  Optional[List[bool]] = None,
             point2D_idxs:  Optional[List[int]] = None):
         return self.solver.run(
-            qvec, tvec, camera, points3D,
+            cam_from_world, camera, points3D,
             fmap, references, inliers=inliers, patch_idxs=point2D_idxs)
 
     def refine_multilevel(
             self,
-            qvec: np.ndarray,  # [3,1]
-            tvec: np.ndarray,  # [3,1]
+            cam_from_world: pycolmap.Rigid3d,  # refined in-place
             camera: pycolmap.Camera,
             points3D: List[np.ndarray],
             fmaps: List[features.FeatureMap],
@@ -253,7 +253,7 @@ class QueryBundleAdjuster:
         assert (len(fmaps) == len(references))
         levels = resolve_level_indices(self.conf.level_indices, len(fmaps))
         for level in levels:
-            self.refine(qvec, tvec, camera, points3D, fmaps[level],
+            self.refine(cam_from_world, camera, points3D, fmaps[level],
                         references[level], inliers=inliers,
                         point2D_idxs=point2D_idxs)
 
@@ -422,7 +422,7 @@ class QueryLocalizer:
         assert (len(pnp_point2D_idxs) == len(pnp_points3D_id))
         assert (image_path is not None or query_fmaps is not None)
         if len(pnp_point2D_idxs) == 0:
-            return {"success": False}
+            return None
         pnp_points3D = [self.reconstruction.points3D[p3D_id].xyz
                         for p3D_id in pnp_points3D_id]
 
@@ -455,23 +455,23 @@ class QueryLocalizer:
         # Run PnP
         logger.info(f"Running PnP with {pnp_points2D.shape[0]} "
                     "correspondences.")
-        pose_dict = pycolmap.absolute_pose_estimation(
-            pnp_points2D, pnp_points3D, query_camera,
+        pose_dict = pycolmap.estimate_and_refine_absolute_pose(
+            pnp_points2D, np.array(pnp_points3D), query_camera,
             estimation_options=to_ctr(self.conf.PnP.estimation),
             refinement_options=to_ctr(self.conf.PnP.refinement))
 
-        if not pose_dict["success"]:
-            return pose_dict
+        if pose_dict is None:
+            return None
 
         # For QBA we optionally select unique 2D-3D correspondences
-        inliers = pose_dict["inliers"]
+        inliers = list(pose_dict["inlier_mask"])
         if self.conf.unique_inliers:  # Checks None and False
             if self.conf.unique_inliers == "random":
                 inliers = find_unique_inliers(pnp_points3D_id,
                                               pre_inliers=inliers)
             elif self.conf.unique_inliers == "min_error":
                 inliers = find_unique_min_reproj_inliers(
-                    pnp_points3D_id, pose_dict["qvec"], pose_dict["tvec"],
+                    pnp_points3D_id, pose_dict["cam_from_world"],
                     query_camera, pnp_points2D, self.reconstruction,
                     pre_inliers=inliers, point2D_idxs=pnp_point2D_idxs)
             else:
@@ -482,19 +482,20 @@ class QueryLocalizer:
         # Run QBA
         if self.conf.QBA.apply:
             self.query_bundle_adjuster.refine_multilevel(
-                pose_dict["qvec"], pose_dict["tvec"], query_camera,
+                pose_dict["cam_from_world"], query_camera,
                 pnp_points3D, query_fmaps, query_references,
                 inliers=inliers, point2D_idxs=pnp_point2D_idxs
             )
 
         # We recompute the inliers from the final pose
         reprojection_errors = compute_reprojection_errors(
-            pnp_points2D, pnp_points3D, pose_dict["qvec"], pose_dict["tvec"],
+            pnp_points2D, pnp_points3D, pose_dict["cam_from_world"],
             query_camera
         )
         max_error = self.conf.PnP.estimation.ransac.max_error
-        pose_dict["inliers"] = [err < max_error for err in reprojection_errors]
-        pose_dict["num_inliers"] = sum(pose_dict["inliers"])
+        pose_dict["inlier_mask"] = np.array(
+            [err < max_error for err in reprojection_errors])
+        pose_dict["num_inliers"] = int(pose_dict["inlier_mask"].sum())
 
         return pose_dict
 

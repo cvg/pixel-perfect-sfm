@@ -31,10 +31,10 @@ With `pixsfm`, you can:
 
 ## Installation
 
-`pixsfm` requires Python >=3.6, GCC >=6.1, and COLMAP 3.8 [installed from source](https://colmap.github.io/install.html#build-from-source). The core optimization is implemented in C++ with [Ceres >= 2.1](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7 and [pycolmap](https://github.com/colmap/pycolmap) + [pyceres](https://github.com/cvg/pyceres) built from source:
+`pixsfm` requires Python >=3.10, a C++17 compiler, and COLMAP >= 4.2 [installed from source](https://colmap.github.io/install.html#build-from-source). The core optimization is implemented in C++ with [Ceres >= 2.1](https://github.com/ceres-solver/ceres-solver/) but we provide Python bindings with high granularity. The code is written for UNIX and has not been tested on Windows. The remaining dependencies are listed in `requirements.txt` and include [PyTorch](https://pytorch.org/) >=1.7, [pycolmap](https://github.com/colmap/colmap/tree/main/pycolmap) >= 4.2 and [pyceres](https://github.com/cvg/pyceres) >= 2.6. pycolmap should be built against the same COLMAP installation (`pip install .` in the COLMAP source tree). Alternatively, `pixsfm` and all its dependencies can be installed from conda-forge with `conda install -c conda-forge pixsfm`.
 
 ```bash
-# install COLMAP following colmap.github.io/install.html#build-from-source, tag 3.8
+# install COLMAP >= 4.2 following colmap.github.io/install.html#build-from-source
 sudo apt-get install libhdf5-dev
 git clone https://github.com/cvg/pixel-perfect-sfm --recursive
 cd pixel-perfect-sfm
@@ -245,9 +245,9 @@ pose_dict = localizer.localize(
     query_camera,     # pycolmap.Camera
     image_path=path_to_query_image,
 )
-if pose_dict["success"]:
-    # quaternion and translation of the query, from world to camera
-    qvec, tvec = pose_dict["qvec"], pose_dict["tvec"]
+if pose_dict is not None:
+    # pose of the query, from world to camera
+    cam_from_world = pose_dict["cam_from_world"]  # pycolmap.Rigid3d
 ```
 
 The default localization configuration can be accessed with `QueryLocalizer.default_conf`.
@@ -511,11 +511,11 @@ localization:  # pixsfm.localization.main.QueryLocalizer
       print_summary: false
       bound: 4.0  # constraint on the distance (in pixels) w.r.t. the initial values
   PnP:
-    estimation:  # pycolmap.absolute_pose_estimation
+    estimation:  # pycolmap.estimate_and_refine_absolute_pose
       ransac:
         max_error: 12  # inlier threshold in pixel reprojection error
         estimate_focal_length: false  # if the focal length is unknown
-    refinement:  # refinement in pycolmap.absolute_pose_estimation
+    refinement:  # refinement in pycolmap.estimate_and_refine_absolute_pose
     	refine_focal_length: false
     	refine_extra_params: false
   QBA:  # query bundle adjuster

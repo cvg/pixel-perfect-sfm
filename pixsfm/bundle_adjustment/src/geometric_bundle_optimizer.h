@@ -54,24 +54,24 @@ int GeometricBundleOptimizer::AddResiduals<>(
     return 0;
   }
 
-  colmap::point3D_t point3D_id = point2D.Point3DId();
+  colmap::point3D_t point3D_id = point2D.point3D_id;
   colmap::Point3D& point3D = reconstruction->Point3D(point3D_id);
 
-  double* qvec_data = image.Qvec().data();
-  double* tvec_data = image.Tvec().data();
-  double* camera_params_data = camera.ParamsData();
-  double* xyz = point3D.XYZ().data();
+  double* qvec_data = QvecData(image);
+  double* tvec_data = TvecData(image);
+  double* camera_params_data = camera.params.data();
+  double* xyz = point3D.xyz.data();
 
   ceres::ResidualBlockId block_id;
 
   if (constant_pose) {
     ceres::CostFunction* cost_function = CreateGeometricConstantPoseCostFunctor(
-        camera.ModelId(), image.Qvec(), image.Tvec(), point2D.XY());
+        camera.model_id, MutableCamFromWorld(image), point2D.xy);
     block_id = problem_->AddResidualBlock(cost_function, loss_function, xyz,
                                           camera_params_data);
   } else {
     ceres::CostFunction* cost_function =
-        CreateGeometricCostFunctor(camera.ModelId(), point2D.XY());
+        CreateGeometricCostFunctor(camera.model_id, point2D.xy);
 
     block_id =
         problem_->AddResidualBlock(cost_function, loss_function, qvec_data,

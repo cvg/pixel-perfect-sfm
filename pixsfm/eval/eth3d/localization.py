@@ -29,17 +29,11 @@ from .config import DATASET_PATH, OUTPUTS_PATH, match_configs, feature_configs
 
 def copy_reconstruction_empty(rec: pycolmap.Reconstruction, target_path: Path,
                               exclude_images: Set[str] = set()):
-    target = pycolmap.Reconstruction()
-    for _, camera in rec.cameras.items():
-        target.add_camera(camera)
-    for _, image in rec.images.items():
-        if image.name in exclude_images:
-            continue
-        image = deepcopy(image)
-        image.points2D.clear()
-        target.add_image(image)
-        target.register_image(image.image_id)
-    target.check()
+    target = deepcopy(rec)
+    for _, image in target.images.items():
+        if image.name in exclude_images and image.has_pose:
+            target.deregister_frame(image.frame_id)
+    target.delete_all_points2D_and_points3D()
     target.write_binary(str(target_path))
 
 
@@ -111,13 +105,12 @@ def get_query_matches(name, pairs, matches_path, reconstruction,
 
 
 def compute_pose_error(image_gt: pycolmap.Image, pose_dict: Dict[str, Any]):
-    if pose_dict['success']:
-        R_w2c_gt = image_gt.rotmat()
+    if pose_dict is not None:
+        R_w2c_gt = image_gt.cam_from_world().rotation.matrix()
         t_c2w_gt = image_gt.projection_center()
-        image = pycolmap.Image(
-            "dummy", qvec=pose_dict['qvec'], tvec=pose_dict['tvec'])
-        R_w2c = image.rotmat()
-        t_c2w = image.projection_center()
+        cam_from_world = pose_dict['cam_from_world']
+        R_w2c = cam_from_world.rotation.matrix()
+        t_c2w = cam_from_world.inverse().translation
 
         dt = np.linalg.norm(t_c2w_gt - t_c2w)
         cos = np.clip(((np.trace(R_w2c_gt @ R_w2c.T)) - 1) / 2, -1, 1)

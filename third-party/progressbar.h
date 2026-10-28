@@ -90,8 +90,8 @@ class progressbar {
       std::string skip_char;
       std::string opening_bracket_char;
       std::string closing_bracket_char;
-      std::chrono::time_point<std::chrono::high_resolution_clock> last_timepoint;
-      std::chrono::time_point<std::chrono::high_resolution_clock> init_timepoint;
+      std::chrono::time_point<std::chrono::steady_clock> last_timepoint;
+      std::chrono::time_point<std::chrono::steady_clock> init_timepoint;
 };
 
 #include <iostream>
@@ -134,8 +134,8 @@ progressbar::progressbar() :
     skip_char("░"),
     opening_bracket_char("["),
     closing_bracket_char("]"),
-    init_timepoint(std::chrono::system_clock::now()),
-    last_timepoint(std::chrono::system_clock::now()) {
+    init_timepoint(std::chrono::steady_clock::now()),
+    last_timepoint(std::chrono::steady_clock::now()) {
         update();
     }
 
@@ -151,8 +151,8 @@ progressbar::progressbar(size_t n, bool showbar, bool init_update) :
     skip_char("░"),
     opening_bracket_char("["),
     closing_bracket_char("]"),
-    init_timepoint(std::chrono::system_clock::now()),
-    last_timepoint(std::chrono::system_clock::now()) {
+    init_timepoint(std::chrono::steady_clock::now()),
+    last_timepoint(std::chrono::steady_clock::now()) {
         if (init_update) {
             update();
         }
@@ -163,7 +163,7 @@ void progressbar::reset() {
     update_is_called = false;
     last_perc = 0;
     update();
-    last_timepoint = std::chrono::high_resolution_clock::now();
+    last_timepoint = std::chrono::steady_clock::now();
     return;
 }
 
@@ -206,7 +206,7 @@ std::string progressbar::get_update_str() {
     }
 
     // if (perc < last_perc) return;
-    auto now = std::chrono::high_resolution_clock::now();
+    auto now = std::chrono::steady_clock::now();
     double gap = std::chrono::duration_cast<std::chrono::milliseconds>(now-last_timepoint).count() / 1000.0;
     // update percentage each unit
     if ((perc > last_perc) || (!update_is_called) || gap > max_gap_sec) {
